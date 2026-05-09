@@ -70,11 +70,16 @@ asn1pp_add_test(tag_mapping_test codec/tag_mapping_test.cpp)
 asn1pp_add_test(result_test codec/result_test.cpp)
 asn1pp_add_test(codec_interface_test codec/codec_interface_test.cpp)
 
+# BER module tests
+asn1pp_add_test(tlv_test codec/ber/tlv_test.cpp)
+
 # Gen module tests
 asn1pp_add_test(ast_test gen/ast_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
 asn1pp_add_test(diagnostics_test gen/diagnostics_test.cpp)
 asn1pp_add_test(lexer_test gen/lexer_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp)
 asn1pp_add_test(parser_test gen/parser_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
 asn1pp_add_test(EmitterBoolean_test gen/emitter_boolean_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_boolean.cpp)
+asn1pp_add_test(emitter_integer_test gen/emitter_integer_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_integer.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
+asn1pp_add_test(emitter_enumerated_test gen/emitter_enumerated_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_enumerated.cpp)
 asn1pp_add_test(emitter_sequence_test gen/emitter_sequence_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_enumerated.cpp)
 asn1pp_add_test(emitter_string_test gen/emitter_string_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_string.cpp)

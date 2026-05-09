@@ -1411,7 +1411,7 @@ Max Concurrent: 7 (Wave 1)
 
 ---
 
-- [ ] 19. **Tag/Length encoder + decoder**
+- [x] 19. **Tag/Length encoder + decoder**
 
   **What to do**:
   - RED: Test TLV encoding/decoding — short tag (≤30), long tag (≥31), short length (≤127), long length (≥128), indefinite length, constructed tag

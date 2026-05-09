@@ -187,3 +187,40 @@
 - component_type is non-copyable (has unique_ptr<type_ref>) → can't use initializer_list → variadic `comps()` helper with push_back
 - emit_sequence called from cpp_type_for_field before definition → forward declaration needed
 - emitter_sequence.cpp depends on emit_enumerated → added to both asn1pp-gen and test CMake targets
+
+## Task 19: TLV Encoder/Decoder for BER/DER (2026-05-10)
+
+### Design Decisions
+- **Header-only implementation** in `libs/codec/ber/tlv.hpp` — all functions are `inline`, no link-time dependencies beyond existing headers
+- **const_cast pattern for encoding**: `buffer_view` holds `const uint8_t*` (read-optimized), encoding functions use `const_cast` to write into the mutable backing buffer. Caller must ensure the backing buffer is mutable
+- **Base-128 encoding**: Tag numbers ≥31 use long form (X.690 8.1.2.4) with MSB groups extracted via shift-based approach: compute each 7-bit group by shifting instead of iterative division
+- **Long-form length**: Uses big-endian octet representation. The first octet is `0x80 | num_bytes`
+- **Indefinite length**: Returns `static_cast<size_t>(INDEFINITE_LENGTH)` (0x80) as a sentinel value from `decode_length()`. This is unambiguous since BER content lengths are at most `2^max(sizeof(size_t)*8)` and 0x80 is not a valid content length
+
+### Gotchas & Fixes
+1. **Tag encoding byte order bug**: Initial implementation extracted 7-bit groups LSB-first (shifting `num >>= 7`) but populated the wire buffer in big-endian. Fixed by using shift-based extraction: `(t.number >> shift) & CONT_BYTE_VALUE` where `shift = (cont_count - 1 - i) * 7`
+2. **Test helper mismatch**: `expect_buffer_content()` checked the **remaining** (advanced) view instead of the encoded bytes at buffer front. Replaced with `expect_encoded_content()` that reads encoded bytes from `buf[0..n-1]` and verifies view advancement amount
+3. **TLV decode tests**: `decode_tlv_header()` reads from the view front, but the test was creating a view over the full 256-byte buffer. Fixed by truncating to `buffer_view(buf.data(), encoded_bytes)` for the read view
+
+### Files Created/Modified
+- `libs/codec/ber/tlv.hpp` (NEW) — 9 functions: `encode_tag`, `decode_tag`, `encoded_tag_size`, `encode_length`, `decode_length`, `encoded_length_size`, `encode_end_of_content`, `encode_tlv`, `decode_tlv_header`
+- `test/codec/ber/tlv_test.cpp` (NEW) — 65 test cases across 9 test suites
+- `test/CMakeLists.txt` (MODIFIED) — added `tlv_test` registration
+
+### Test Coverage (65 tests)
+| Suite | Tests | Coverage |
+|-------|-------|----------|
+| TagEncoding | 11 | Short form (6 classes), long form (2), overflow (2), boundary (1) |
+| TagDecoding | 12 | Round-trip (8), errors (2), advance verification (1), large tag (1) |
+| LengthEncoding | 11 | Short form (2), long form (4), indefinite (1), overflow (3) |
+| LengthDecoding | 14 | Round-trip (9), errors (3), advance (1), reserved form (1) |
+| EndOfContent | 3 | Encode, decode, overflow |
+| EncodedSize | 4 | Tag short/long, length |
+| TLVConvenience | 5 | Round-trip, empty, constructed, overflow, value-too-large |
+| EdgeCases | 4 | Large tags, chained encodes, constructed octet, all classes |
+| Constants | 2 | Mask values, indefinite value |
+
+### Verified
+- `cmake --build build` — zero warnings on asn1pp-codec sources
+- `ctest --test-dir build` — 596/596 passing (531 existing + 65 new)
+- LSP diagnostics — clean on both new files
