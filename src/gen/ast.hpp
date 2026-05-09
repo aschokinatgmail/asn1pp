@@ -6,6 +6,7 @@
 #include <vector>
 #include <variant>
 #include <optional>
+#include <memory>
 
 #include "../../libs/codec/traits.hpp"
 
@@ -28,7 +29,34 @@ struct object_identifier_type {};
 struct relative_oid_type {};
 struct any_type {};
 
-struct constraint;
+struct enumeration_item {
+    std::string name;
+    std::optional<int64_t> value;
+};
+
+struct named_bit {
+    std::string name;
+    std::optional<int64_t> position;
+};
+
+struct enumerated_type {
+    std::vector<enumeration_item> values;
+    bool has_extension = false;
+};
+
+struct bit_string_type {
+    std::vector<named_bit> named_bits;
+    bool has_extension = false;
+};
+
+struct type_ref;
+struct sequence_type;
+struct set_type;
+struct choice_type;
+struct sequence_of_type;
+struct set_of_type;
+struct tagged_type;
+struct constrained_type;
 
 struct type_ref {
     using variant_type = std::variant<
@@ -40,9 +68,25 @@ struct type_ref {
         object_identifier_type,
         relative_oid_type,
         any_type,
-        std::string
+        std::string,
+        std::unique_ptr<sequence_type>,
+        std::unique_ptr<set_type>,
+        std::unique_ptr<choice_type>,
+        enumerated_type,
+        bit_string_type,
+        std::unique_ptr<sequence_of_type>,
+        std::unique_ptr<set_of_type>,
+        std::unique_ptr<tagged_type>,
+        std::unique_ptr<constrained_type>
     >;
     variant_type content;
+
+    type_ref() = default;
+    ~type_ref() = default;
+    type_ref(type_ref&&) noexcept = default;
+    type_ref& operator=(type_ref&&) noexcept = default;
+    type_ref(const type_ref&) = delete;
+    type_ref& operator=(const type_ref&) = delete;
 
     template<typename T>
     [[nodiscard]] bool holds_alternative() const noexcept {
@@ -53,31 +97,21 @@ struct type_ref {
     [[nodiscard]] const T& get() const {
         return std::get<T>(content);
     }
-};
 
-struct enumeration_item {
-    std::string name;
-    std::optional<int64_t> value;
-};
+    template<typename T>
+    [[nodiscard]] bool holds_ptr() const noexcept {
+        return std::holds_alternative<std::unique_ptr<T>>(content);
+    }
 
-struct enumerated_type {
-    std::vector<enumeration_item> values;
-    bool has_extension = false;
-};
-
-struct named_bit {
-    std::string name;
-    std::optional<int64_t> position;
-};
-
-struct bit_string_type {
-    std::vector<named_bit> named_bits;
-    bool has_extension = false;
+    template<typename T>
+    [[nodiscard]] const T& get_ptr() const {
+        return *std::get<std::unique_ptr<T>>(content);
+    }
 };
 
 struct component_type {
     std::string name;
-    type_ref type;
+    std::unique_ptr<type_ref> type;
     bool optional = false;
     std::optional<std::string> default_value;
 };
@@ -94,7 +128,7 @@ struct set_type {
 
 struct choice_alternative {
     std::string name;
-    type_ref type;
+    std::unique_ptr<type_ref> type;
 };
 
 struct choice_type {
@@ -103,26 +137,21 @@ struct choice_type {
 };
 
 struct sequence_of_type {
-    type_ref element_type;
+    std::unique_ptr<type_ref> element_type;
 };
 
 struct set_of_type {
-    type_ref element_type;
+    std::unique_ptr<type_ref> element_type;
 };
 
 struct tagged_type {
     asn1pp::tag tag_value;
     bool implicit = true;
-    type_ref underlying_type;
-};
-
-struct constrained_type {
-    type_ref underlying_type;
-    std::vector<constraint> constraints;
+    std::unique_ptr<type_ref> underlying_type;
 };
 
 struct selection_type {
-    type_ref selected_type;
+    std::unique_ptr<type_ref> selected_type;
     std::string field_name;
 };
 
@@ -154,6 +183,11 @@ struct constraint {
     variant_type content;
 };
 
+struct constrained_type {
+    std::unique_ptr<type_ref> underlying_type;
+    std::vector<constraint> constraints;
+};
+
 struct null_value {};
 
 struct value_ref {
@@ -169,12 +203,12 @@ struct value_ref {
 
 struct type_assignment {
     std::string name;
-    type_ref type;
+    std::unique_ptr<type_ref> type;
 };
 
 struct value_assignment {
     std::string name;
-    type_ref type;
+    std::unique_ptr<type_ref> type;
     value_ref value;
 };
 
@@ -191,6 +225,13 @@ struct assignment {
         type_from_object_assignment
     >;
     variant_type content;
+
+    assignment() = default;
+    ~assignment() = default;
+    assignment(assignment&&) noexcept = default;
+    assignment& operator=(assignment&&) noexcept = default;
+    assignment(const assignment&) = delete;
+    assignment& operator=(const assignment&) = delete;
 };
 
 struct module_definition {
@@ -202,3 +243,115 @@ struct module_definition {
 };
 
 }  // namespace asn1pp::gen
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::integer_type> {
+    static constexpr tag value = make_universal(universal_tag::integer);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::boolean_type> {
+    static constexpr tag value = make_universal(universal_tag::boolean);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::null_type> {
+    static constexpr tag value = make_universal(universal_tag::null);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::real_type> {
+    static constexpr tag value = make_universal(universal_tag::real);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::octet_string_type> {
+    static constexpr tag value = make_universal(universal_tag::octet_string);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::object_identifier_type> {
+    static constexpr tag value = make_universal(universal_tag::object_identifier);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::relative_oid_type> {
+    static constexpr tag value = make_universal(universal_tag::relative_oid);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::bit_string_type> {
+    static constexpr tag value = make_universal(universal_tag::bit_string);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::enumerated_type> {
+    static constexpr tag value = make_universal(universal_tag::enumerated);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::sequence_type> {
+    static constexpr tag value = make_universal(universal_tag::sequence, true);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::set_type> {
+    static constexpr tag value = make_universal(universal_tag::set, true);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::choice_type> {
+    static constexpr tag value = make_universal(universal_tag::sequence, true);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::sequence_of_type> {
+    static constexpr tag value = make_universal(universal_tag::sequence, true);
+};
+
+template<>
+struct asn1pp::tag_for_type<asn1pp::gen::set_of_type> {
+    static constexpr tag value = make_universal(universal_tag::set, true);
+};
+
+template<>
+struct asn1pp::is_type_constructed<asn1pp::gen::sequence_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_constructed<asn1pp::gen::set_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_constructed<asn1pp::gen::choice_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_constructed<asn1pp::gen::sequence_of_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_constructed<asn1pp::gen::set_of_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::integer_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::boolean_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::null_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::real_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::octet_string_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::object_identifier_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::relative_oid_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::bit_string_type> : std::true_type {};
+
+template<>
+struct asn1pp::is_type_primitive<asn1pp::gen::enumerated_type> : std::true_type {};

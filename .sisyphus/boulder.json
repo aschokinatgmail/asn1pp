@@ -90,6 +90,33 @@
       "agent": "Sisyphus-Junior",
       "category": "deep",
       "updated_at": "2026-05-09T19:27:23.258Z"
+    },
+    "todo:10": {
+      "task_key": "todo:10",
+      "task_label": "10",
+      "task_title": "**Source location + diagnostic framework**",
+      "session_id": "ses_1f1c3d0daffe8006vZfPuHcMSr",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-09T19:51:57.076Z"
+    },
+    "todo:11": {
+      "task_key": "todo:11",
+      "task_label": "11",
+      "task_title": "**ASN.1 lexer (TDD)**",
+      "session_id": "ses_1f196bea0ffeO7bJIDqzYjBCrn",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-09T20:27:43.301Z"
+    },
+    "todo:12": {
+      "task_key": "todo:12",
+      "task_label": "12",
+      "task_title": "**ASN.1 parser — core grammar (TDD)**",
+      "session_id": "ses_1f132d9f2ffeWLCt7fx6fZ15k3",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-09T22:29:32.578Z"
     }
   }
 }

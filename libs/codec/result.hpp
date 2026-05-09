@@ -125,7 +125,7 @@ public:
     constexpr auto map(F&& f) noexcept -> result<decltype(f(std::declval<T>()))> {
         using U = decltype(f(std::declval<T>()));
         if (storage_.is_ok) {
-            return result<U>::ok(f(storage_.value()));
+            return result<U>::ok(f(std::move(storage_.value())));
         }
         return result<U>::err(storage_.error);
     }
@@ -133,7 +133,7 @@ public:
     template<typename F>
     constexpr auto and_then(F&& f) noexcept -> decltype(f(std::declval<T>())) {
         if (storage_.is_ok) {
-            return f(storage_.value());
+            return f(std::move(storage_.value()));
         }
         using ResultType = decltype(f(std::declval<T>()));
         return ResultType::err(storage_.error);

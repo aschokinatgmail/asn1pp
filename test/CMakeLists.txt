@@ -52,7 +52,7 @@ function(asn1pp_add_test test_name)
             asn1pp-codec
     )
     target_compile_features(${test_name} PRIVATE cxx_std_20)
-    target_compile_options(${test_name} PRIVATE -Wno-sign-compare)
+    target_compile_options(${test_name} PRIVATE -Wno-sign-compare -Wno-character-conversion)
 
     gtest_discover_tests(${test_name})
 endfunction()
@@ -66,9 +66,12 @@ asn1pp_add_test(bit_ops_test buffer/bit_ops_test.cpp)
 
 # Codec module tests
 asn1pp_add_test(traits_test codec/traits_test.cpp)
-asn1pp_add_test(tag_test codec/tag_test.cpp)
+asn1pp_add_test(tag_mapping_test codec/tag_mapping_test.cpp)
 asn1pp_add_test(result_test codec/result_test.cpp)
 asn1pp_add_test(codec_interface_test codec/codec_interface_test.cpp)
 
 # Gen module tests
 asn1pp_add_test(ast_test gen/ast_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
+asn1pp_add_test(diagnostics_test gen/diagnostics_test.cpp)
+asn1pp_add_test(lexer_test gen/lexer_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp)
+asn1pp_add_test(parser_test gen/parser_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)

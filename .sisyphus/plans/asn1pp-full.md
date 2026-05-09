@@ -837,7 +837,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 2 group)
 
-- [ ] 10. **Source location + diagnostic framework**
+- [x] 10. **Source location + diagnostic framework**
 
   **What to do**:
   - RED: Test source_location comparison, diagnostic formatting, error/warning emission
@@ -897,7 +897,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 2 group)
 
-- [ ] 11. **ASN.1 lexer (TDD)**
+- [x] 11. **ASN.1 lexer (TDD)**
 
   **What to do**:
   - RED: Write tests for each token type: keywords (INTEGER, SEQUENCE, CHOICE, etc.), identifiers, number literals, string literals, operators (`::=`, `..`, `...`, `{`, `}`, `(`, `)`, `[`, `]`, `,`, `;`, `|`), comments (both `--` line and `/* */` block)
@@ -976,7 +976,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 2 group)
 
-- [ ] 12. **ASN.1 parser — core grammar (TDD)**
+- [x] 12. **ASN.1 parser — core grammar (TDD)**
 
   **What to do**:
   - RED: Write tests for parser — module header parsing, type assignment, SEQUENCE type, INTEGER type, simple CHOICE, OID value, imports/exports
@@ -1058,7 +1058,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 2 group)
 
-- [ ] 13. **C++ type-to-tag mapping traits**
+- [x] 13. **C++ type-to-tag mapping traits**
 
   **What to do**:
   - RED: Test that `asn1_tag<int_type>` gives `integer`, that generated SEQUENCE gets `constructed | sequence` tag

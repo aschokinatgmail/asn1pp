@@ -106,3 +106,34 @@
 - **CMakeLists already wired**: `asn1pp_add_test(codec_interface_test ...)` was already in test/CMakeLists.txt
 - **Fixed**: Removed unused `#include <concepts>` from test file (was flagged by clangd)
 - **clangd false positive**: `<type_traits>` flagged as unused despite `std::is_empty_v` usage in static_assert — clangd's unused-include heuristic doesn't trace static_assert usages
+
+## Task 10: Source Location + Diagnostic Framework (2026-05-10)
+- **source_location reuse**: Existing struct in `src/gen/ast.hpp` (lines 16-20) with `string_view file`, `size_t line`, `size_t column`. No duplicate struct needed — `diagnostics.hpp` includes `ast.hpp`.
+- **Header-only design**: All `diagnostic_engine` methods inline in the header (no .cpp). Simpler build integration, works with `asn1pp_add_test` macro without extra source files.
+- **GCC-style format**: `file:line:col: severity: message` — standard format recognizable by IDEs for clickable error navigation.
+- **No exceptions**: Engine accumulates diagnostics in a `std::vector<diagnostic>`. Caller checks `has_errors()` after parsing/validation.
+- **No iostream**: Uses `std::string` concatenation with `reserve()` for formatting. No `<format>` header needed.
+- **Iteration**: Raw pointer iteration (`begin()`/`end()`) returning `const diagnostic*` from `vector::data()` — simple, no iterator wrapper needed.
+- **Count methods**: `error_count()`, `warning_count()`, `note_count()` each iterate the vector (O(n)). For small diagnostic counts this is fine; if scaling, consider maintaining separate count fields.
+- **Caret positioning**: `format_line_with_caret()` adds spaces (column-1) then `^`. Column 0 means no caret. Simple tab handling — each tab counts as 1 space position.
+
+## Task 11: ASN.1 Lexer (2026-05-10)
+- **Hand-written lexer** using string_view for zero-copy scanning, no regex, no generator tools
+- **Case-insensitive keywords**: `scan_identifier_or_keyword()` builds uppercase version for `unordered_map` lookup, preserving original case in token value
+- **ASN.1 identifier rules**: Allows hyphens in identifiers (e.g., `obj-id`, `my-module`), matching X.680 spec
+- **Binary/hex string parsing**: `'0101'B` / `'A0FF'H` — scans between single quotes, then checks suffix character (case-insensitive B/H)
+- **Comment handling**: `--` line comments (until newline), `/* */` block comments (multiline, with nesting stars support)
+- **Peek mechanism**: `std::optional<token> peeked_` stores one-token lookahead; `peek_token()` caches, `next_token()` consumes
+- **Diagnostic integration**: `has_error_` flag + optional `diagnostic_engine*` for error reporting (null-safe)
+- **149 test cases** covering: 28 keywords, 14 case-insensitivity, 8 identifiers, 6 numbers, 5 strings, 5 binary, 4 hex, 14 operators, 7 comments, 3 comment interaction, 7 errors, 5 peek, 6 locations, 5 EOF, 8 integration
+- **`double_dot` token_type** exists in enum but unused (lexer uses `range` for `..`) — kept for spec compliance
+- Test registered as: `asn1pp_add_test(lexer_test gen/lexer_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp)`
+
+## Task 12: ASN.1 Parser (2026-05-10)
+- Parser implementation lives in `src/gen/parser.hpp` + `src/gen/parser.cpp` and is already wired into `asn1pp-gen` plus `parser_test` via existing CMake entries.
+- Parser uses lexer lookahead directly, `result<T>` for parse failures, and reports diagnostics through the optional `diagnostic_engine*`; hard module-structure failures return parse_error while module-body assignment/import/export issues synchronize and continue.
+- `TAGS`, `STRING`, `IMPLIED`, `OBJECT IDENTIFIER`, `RELATIVE OID`, and `ANY` are handled as case-insensitive identifiers because the lexer keyword table does not classify those multi-word/special ASN.1 terms.
+- Constraints supported for this wave: value ranges, `SIZE (...)`, extension marker, and a basic `ALL EXCEPT ...` skip-to-close representation as `extension_constraint`.
+- Parser test suite currently has 99 Parser tests covering module structure, tag defaults, assignments, core builtin types, SEQUENCE/SET/CHOICE, OF types, imports/exports, constraints, tagged types, values, recovery, and real-world patterns.
+- AppleClang/GTest emits `-Wcharacter-conversion` from system-installed gtest headers during parser test compilation unless test targets add `-Wno-character-conversion`; `asn1pp_add_test` now applies it with `-Wno-sign-compare`.
+- Verification run: `cmake --build build` completed, but Apple `ranlib` warns that placeholder codec objects have no symbols; no compiler warnings remained. `ctest --test-dir build -R Parser` and direct `./build/test/parser_test` passed all 99 tests.

@@ -6,6 +6,31 @@ namespace {
 
 using namespace asn1pp::gen;
 
+template<typename T>
+std::unique_ptr<type_ref> make_type(T val) {
+    auto tr = std::make_unique<type_ref>();
+    tr->content = std::move(val);
+    return tr;
+}
+
+std::unique_ptr<type_ref> make_int_ref() {
+    auto tr = std::make_unique<type_ref>();
+    tr->content = integer_type{};
+    return tr;
+}
+
+std::unique_ptr<type_ref> make_bool_ref() {
+    auto tr = std::make_unique<type_ref>();
+    tr->content = boolean_type{};
+    return tr;
+}
+
+std::unique_ptr<type_ref> make_octet_ref() {
+    auto tr = std::make_unique<type_ref>();
+    tr->content = octet_string_type{};
+    return tr;
+}
+
 TEST(AstIntegerType, Construction) {
     type_ref ref;
     ref.content = integer_type{};
@@ -123,8 +148,8 @@ TEST(AstSequenceType, Construction) {
     sequence_type t;
     component_type c1;
     c1.name = "field1";
-    c1.type.content = integer_type{};
-    t.components.push_back(c1);
+    c1.type = make_int_ref();
+    t.components.push_back(std::move(c1));
     EXPECT_EQ(t.components.size(), 1);
     EXPECT_FALSE(t.has_extension);
 }
@@ -139,8 +164,8 @@ TEST(AstSequenceType, Print) {
     sequence_type t;
     component_type c1;
     c1.name = "field1";
-    c1.type.content = integer_type{};
-    t.components.push_back(c1);
+    c1.type = make_int_ref();
+    t.components.push_back(std::move(c1));
     std::string output = to_string(t);
     EXPECT_TRUE(output.find("SEQUENCE") != std::string::npos);
     EXPECT_TRUE(output.find("field1") != std::string::npos);
@@ -150,8 +175,8 @@ TEST(AstSetType, Construction) {
     set_type t;
     component_type c1;
     c1.name = "field1";
-    c1.type.content = integer_type{};
-    t.components.push_back(c1);
+    c1.type = make_int_ref();
+    t.components.push_back(std::move(c1));
     EXPECT_EQ(t.components.size(), 1);
     EXPECT_FALSE(t.has_extension);
 }
@@ -160,8 +185,8 @@ TEST(AstChoiceType, Construction) {
     choice_type t;
     choice_alternative a1;
     a1.name = "alt1";
-    a1.type.content = integer_type{};
-    t.alternatives.push_back(a1);
+    a1.type = make_int_ref();
+    t.alternatives.push_back(std::move(a1));
     EXPECT_EQ(t.alternatives.size(), 1);
     EXPECT_FALSE(t.has_extension);
 }
@@ -176,8 +201,8 @@ TEST(AstChoiceType, Print) {
     choice_type t;
     choice_alternative a1;
     a1.name = "alt1";
-    a1.type.content = integer_type{};
-    t.alternatives.push_back(a1);
+    a1.type = make_int_ref();
+    t.alternatives.push_back(std::move(a1));
     std::string output = to_string(t);
     EXPECT_TRUE(output.find("CHOICE") != std::string::npos);
     EXPECT_TRUE(output.find("alt1") != std::string::npos);
@@ -185,13 +210,13 @@ TEST(AstChoiceType, Print) {
 
 TEST(AstSequenceOfType, Construction) {
     sequence_of_type t;
-    t.element_type.content = integer_type{};
-    EXPECT_TRUE(t.element_type.holds_alternative<integer_type>());
+    t.element_type = make_int_ref();
+    EXPECT_TRUE(t.element_type->holds_alternative<integer_type>());
 }
 
 TEST(AstSequenceOfType, Print) {
     sequence_of_type t;
-    t.element_type.content = integer_type{};
+    t.element_type = make_int_ref();
     std::string output = to_string(t);
     EXPECT_TRUE(output.find("SEQUENCE OF") != std::string::npos);
     EXPECT_TRUE(output.find("INTEGER") != std::string::npos);
@@ -199,13 +224,13 @@ TEST(AstSequenceOfType, Print) {
 
 TEST(AstSetOfType, Construction) {
     set_of_type t;
-    t.element_type.content = integer_type{};
-    EXPECT_TRUE(t.element_type.holds_alternative<integer_type>());
+    t.element_type = make_int_ref();
+    EXPECT_TRUE(t.element_type->holds_alternative<integer_type>());
 }
 
 TEST(AstSetOfType, Print) {
     set_of_type t;
-    t.element_type.content = integer_type{};
+    t.element_type = make_int_ref();
     std::string output = to_string(t);
     EXPECT_TRUE(output.find("SET OF") != std::string::npos);
     EXPECT_TRUE(output.find("INTEGER") != std::string::npos);
@@ -215,8 +240,8 @@ TEST(AstTaggedType, Construction) {
     tagged_type t;
     t.tag_value = asn1pp::make_context_specific(0, false);
     t.implicit = true;
-    t.underlying_type.content = integer_type{};
-    EXPECT_TRUE(t.underlying_type.holds_alternative<integer_type>());
+    t.underlying_type = make_int_ref();
+    EXPECT_TRUE(t.underlying_type->holds_alternative<integer_type>());
     EXPECT_TRUE(t.implicit);
 }
 
@@ -224,7 +249,7 @@ TEST(AstTaggedType, Print) {
     tagged_type t;
     t.tag_value = asn1pp::make_context_specific(0, false);
     t.implicit = true;
-    t.underlying_type.content = integer_type{};
+    t.underlying_type = make_int_ref();
     std::string output = to_string(t);
     EXPECT_TRUE(output.find("context-specific") != std::string::npos);
     EXPECT_TRUE(output.find("IMPLICIT") != std::string::npos);
@@ -232,15 +257,15 @@ TEST(AstTaggedType, Print) {
 
 TEST(AstConstrainedType, Construction) {
     constrained_type t;
-    t.underlying_type.content = integer_type{};
+    t.underlying_type = make_int_ref();
     t.constraints.push_back(constraint{value_range_constraint{0, 100, true, true}});
-    EXPECT_TRUE(t.underlying_type.holds_alternative<integer_type>());
+    EXPECT_TRUE(t.underlying_type->holds_alternative<integer_type>());
     EXPECT_EQ(t.constraints.size(), 1);
 }
 
 TEST(AstConstrainedType, Print) {
     constrained_type t;
-    t.underlying_type.content = integer_type{};
+    t.underlying_type = make_int_ref();
     t.constraints.push_back(constraint{value_range_constraint{0, 100, true, true}});
     std::string output = to_string(t);
     EXPECT_TRUE(output.find("INTEGER") != std::string::npos);
@@ -249,15 +274,15 @@ TEST(AstConstrainedType, Print) {
 
 TEST(AstSelectionType, Construction) {
     selection_type t;
-    t.selected_type.content = integer_type{};
+    t.selected_type = make_int_ref();
     t.field_name = "field1";
-    EXPECT_TRUE(t.selected_type.holds_alternative<integer_type>());
+    EXPECT_TRUE(t.selected_type->holds_alternative<integer_type>());
     EXPECT_EQ(t.field_name, "field1");
 }
 
 TEST(AstSelectionType, Print) {
     selection_type t;
-    t.selected_type.content = integer_type{};
+    t.selected_type = make_int_ref();
     t.field_name = "field1";
     std::string output = to_string(t);
     EXPECT_TRUE(output.find("SELECTION") != std::string::npos);
@@ -326,19 +351,19 @@ TEST(AstValueRef, OctetString) {
 TEST(AstAssignment, TypeAssignment) {
     type_assignment ta;
     ta.name = "MyInt";
-    ta.type.content = integer_type{};
+    ta.type = make_int_ref();
     assignment a;
-    a.content = ta;
+    a.content = std::move(ta);
     EXPECT_TRUE(std::holds_alternative<type_assignment>(a.content));
 }
 
 TEST(AstAssignment, ValueAssignment) {
     value_assignment va;
     va.name = "myValue";
-    va.type.content = integer_type{};
+    va.type = make_int_ref();
     va.value.content = int64_t{100};
     assignment a;
-    a.content = va;
+    a.content = std::move(va);
     EXPECT_TRUE(std::holds_alternative<value_assignment>(a.content));
 }
 
@@ -361,18 +386,18 @@ TEST(AstModuleDefinition, WithAssignments) {
 
     type_assignment ta;
     ta.name = "MyInt";
-    ta.type.content = integer_type{};
+    ta.type = make_int_ref();
     assignment a;
-    a.content = ta;
-    mod.assignments.push_back(a);
+    a.content = std::move(ta);
+    mod.assignments.push_back(std::move(a));
 
     value_assignment va;
     va.name = "myValue";
-    va.type.content = integer_type{};
+    va.type = make_int_ref();
     va.value.content = int64_t{100};
     assignment a2;
-    a2.content = va;
-    mod.assignments.push_back(a2);
+    a2.content = std::move(va);
+    mod.assignments.push_back(std::move(a2));
 
     EXPECT_EQ(mod.assignments.size(), 2);
 }
@@ -385,10 +410,10 @@ TEST(AstModuleDefinition, Print) {
 
     type_assignment ta;
     ta.name = "MyInt";
-    ta.type.content = integer_type{};
+    ta.type = make_int_ref();
     assignment a;
-    a.content = ta;
-    mod.assignments.push_back(a);
+    a.content = std::move(ta);
+    mod.assignments.push_back(std::move(a));
 
     std::string output = to_string(mod);
     EXPECT_TRUE(output.find("MODULE TestModule") != std::string::npos);
@@ -416,7 +441,7 @@ TEST(AstSourceLocation, Construction) {
 TEST(AstComponentType, Optional) {
     component_type comp;
     comp.name = "optionalField";
-    comp.type.content = boolean_type{};
+    comp.type = make_bool_ref();
     comp.optional = true;
     EXPECT_TRUE(comp.optional);
     EXPECT_FALSE(comp.default_value.has_value());
@@ -425,7 +450,7 @@ TEST(AstComponentType, Optional) {
 TEST(AstComponentType, DefaultValue) {
     component_type comp;
     comp.name = "fieldWithDefault";
-    comp.type.content = integer_type{};
+    comp.type = make_int_ref();
     comp.default_value = "defaultValue";
     EXPECT_TRUE(comp.default_value.has_value());
     EXPECT_EQ(comp.default_value.value(), "defaultValue");
@@ -434,7 +459,7 @@ TEST(AstComponentType, DefaultValue) {
 TEST(AstComponentType, Print) {
     component_type comp;
     comp.name = "field1";
-    comp.type.content = integer_type{};
+    comp.type = make_int_ref();
     std::string output = to_string(comp);
     EXPECT_TRUE(output.find("field1") != std::string::npos);
     EXPECT_TRUE(output.find("INTEGER") != std::string::npos);
@@ -443,7 +468,7 @@ TEST(AstComponentType, Print) {
 TEST(AstComponentType, PrintOptional) {
     component_type comp;
     comp.name = "optionalField";
-    comp.type.content = boolean_type{};
+    comp.type = make_bool_ref();
     comp.optional = true;
     std::string output = to_string(comp);
     EXPECT_TRUE(output.find("OPTIONAL") != std::string::npos);
@@ -451,7 +476,7 @@ TEST(AstComponentType, PrintOptional) {
 
 TEST(AstConstrainedType, MultipleConstraints) {
     constrained_type ct;
-    ct.underlying_type.content = octet_string_type{};
+    ct.underlying_type = make_octet_ref();
     ct.constraints.push_back(constraint{size_constraint{1, 100}});
     ct.constraints.push_back(constraint{permitted_alphabet_constraint{"A-Z"}});
     std::string output = to_string(ct);

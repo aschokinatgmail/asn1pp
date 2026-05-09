@@ -82,7 +82,7 @@ std::string to_string(const constraint& c) {
 
 std::string to_string(const component_type& comp) {
     std::ostringstream oss;
-    oss << comp.name << " " << to_string(comp.type);
+    oss << comp.name << " " << (comp.type ? to_string(*comp.type) : "<null>");
     if (comp.optional) {
         oss << " OPTIONAL";
     }
@@ -94,7 +94,7 @@ std::string to_string(const component_type& comp) {
 
 std::string to_string(const choice_alternative& alt) {
     std::ostringstream oss;
-    oss << alt.name << " " << to_string(alt.type);
+    oss << alt.name << " " << (alt.type ? to_string(*alt.type) : "<null>");
     return oss.str();
 }
 
@@ -141,11 +141,11 @@ std::string to_string(const choice_type& t) {
 }
 
 std::string to_string(const sequence_of_type& t) {
-    return "SEQUENCE OF " + to_string(t.element_type);
+    return "SEQUENCE OF " + (t.element_type ? to_string(*t.element_type) : "<null>");
 }
 
 std::string to_string(const set_of_type& t) {
-    return "SET OF " + to_string(t.element_type);
+    return "SET OF " + (t.element_type ? to_string(*t.element_type) : "<null>");
 }
 
 std::string to_string(const tagged_type& t) {
@@ -154,13 +154,13 @@ std::string to_string(const tagged_type& t) {
         << to_string(t.tag_value)
         << " "
         << (t.implicit ? "IMPLICIT" : "EXPLICIT")
-        << " " << to_string(t.underlying_type);
+        << " " << (t.underlying_type ? to_string(*t.underlying_type) : "<null>");
     return oss.str();
 }
 
 std::string to_string(const constrained_type& t) {
     std::ostringstream oss;
-    oss << to_string(t.underlying_type);
+    oss << (t.underlying_type ? to_string(*t.underlying_type) : "<null>");
     for (const auto& c : t.constraints) {
         oss << " " << to_string(c);
     }
@@ -168,7 +168,7 @@ std::string to_string(const constrained_type& t) {
 }
 
 std::string to_string(const selection_type& t) {
-    return "SELECTION " + t.field_name + " " + to_string(t.selected_type);
+    return "SELECTION " + t.field_name + " " + (t.selected_type ? to_string(*t.selected_type) : "<null>");
 }
 
 std::string to_string(const enumerated_type& t) {
@@ -220,6 +220,24 @@ std::string to_string(const type_ref& type) {
             return "ANY";
         } else if constexpr (std::is_same_v<T, std::string>) {
             return t;
+        } else if constexpr (std::is_same_v<T, sequence_type>) {
+            return to_string(t);
+        } else if constexpr (std::is_same_v<T, set_type>) {
+            return to_string(t);
+        } else if constexpr (std::is_same_v<T, choice_type>) {
+            return to_string(t);
+        } else if constexpr (std::is_same_v<T, enumerated_type>) {
+            return to_string(t);
+        } else if constexpr (std::is_same_v<T, bit_string_type>) {
+            return to_string(t);
+        } else if constexpr (std::is_same_v<T, sequence_of_type>) {
+            return to_string(t);
+        } else if constexpr (std::is_same_v<T, set_of_type>) {
+            return to_string(t);
+        } else if constexpr (std::is_same_v<T, tagged_type>) {
+            return to_string(t);
+        } else if constexpr (std::is_same_v<T, constrained_type>) {
+            return to_string(t);
         }
         return "UNKNOWN_TYPE";
     }, type.content);
@@ -241,9 +259,9 @@ std::string to_string(const module_definition& module) {
         std::visit([&oss](const auto& a) {
             using T = std::decay_t<decltype(a)>;
             if constexpr (std::is_same_v<T, type_assignment>) {
-                oss << "TYPE-ASSIGNMENT " << a.name << " = " << to_string(a.type) << "\n";
+                oss << "TYPE-ASSIGNMENT " << a.name << " = " << (a.type ? to_string(*a.type) : "<null>") << "\n";
             } else if constexpr (std::is_same_v<T, value_assignment>) {
-                oss << "VALUE-ASSIGNMENT " << a.name << " " << to_string(a.type) << "\n";
+                oss << "VALUE-ASSIGNMENT " << a.name << " " << (a.type ? to_string(*a.type) : "<null>") << "\n";
             } else if constexpr (std::is_same_v<T, type_from_object_assignment>) {
                 oss << "TYPE-FROM-OBJECT " << a.name << "\n";
             }

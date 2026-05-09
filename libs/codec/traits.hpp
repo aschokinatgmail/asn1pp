@@ -199,4 +199,50 @@ inline constexpr bool is_set_v = is_set<T>::value;
 template<typename T>
 concept asn1_type = requires { typename T::asn1_type_tag; } || has_tag_v<T>;
 
-}
+template<typename T>
+struct tag_for_type;
+
+template<typename T>
+inline constexpr tag tag_for_type_v = tag_for_type<T>::value;
+
+template<>
+struct tag_for_type<int64_t> {
+    static constexpr tag value = make_universal(universal_tag::integer);
+};
+
+template<>
+struct tag_for_type<uint64_t> {
+    static constexpr tag value = make_universal(universal_tag::integer);
+};
+
+template<>
+struct tag_for_type<bool> {
+    static constexpr tag value = make_universal(universal_tag::boolean);
+};
+
+template<>
+struct tag_for_type<std::string> {
+    static constexpr tag value = make_universal(universal_tag::octet_string);
+};
+
+template<>
+struct tag_for_type<std::string_view> {
+    static constexpr tag value = make_universal(universal_tag::utf8_string);
+};
+
+template<typename T>
+struct is_type_constructed : std::false_type {};
+
+template<typename T>
+inline constexpr bool is_type_constructed_v = is_type_constructed<T>::value;
+
+template<typename T>
+struct is_type_primitive : std::false_type {};
+
+template<typename T>
+inline constexpr bool is_type_primitive_v = is_type_primitive<T>::value;
+
+// gen type trait specializations are defined in src/gen/ast.hpp
+// (after all gen types are fully defined) to avoid incomplete-type errors.
+
+}  // namespace asn1pp

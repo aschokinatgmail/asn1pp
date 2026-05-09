@@ -3,6 +3,8 @@ add_executable(asn1pp-gen
     gen/generator.cpp
     gen/schema_parser.cpp
     gen/ast_print.cpp
+    gen/lexer.cpp
+    gen/parser.cpp
 )
 
 target_include_directories(asn1pp-gen
