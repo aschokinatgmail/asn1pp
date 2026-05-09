@@ -1,0 +1,77 @@
+{
+  "active_plan": "/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/.sisyphus/plans/asn1pp-full.md",
+  "started_at": "2026-05-09T15:44:49.325Z",
+  "session_ids": [
+    "ses_1f2d9fdecffemzW0EXUxBxaP8V"
+  ],
+  "session_origins": {
+    "ses_1f2d9fdecffemzW0EXUxBxaP8V": "direct"
+  },
+  "plan_name": "asn1pp-full",
+  "agent": "atlas",
+  "task_sessions": {
+    "todo:1": {
+      "task_key": "todo:1",
+      "task_label": "1",
+      "task_title": "**Project scaffold + 3 CMake targets**",
+      "session_id": "ses_1f291a0aeffe6G6PfBqQxw77f8",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-09T15:53:31.204Z"
+    },
+    "todo:2": {
+      "task_key": "todo:2",
+      "task_label": "2",
+      "task_title": "**Google Test + GMock setup**",
+      "session_id": "ses_1f26bc821ffeqw6DLwhvSoKQlc",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-09T16:56:21.894Z"
+    },
+    "todo:3": {
+      "task_key": "todo:3",
+      "task_label": "3",
+      "task_title": "**`buffer_view` class (TDD)**",
+      "session_id": "ses_1f2531b58ffeJeInomxcs2plC3",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-09T17:19:54.362Z"
+    },
+    "todo:4": {
+      "task_key": "todo:4",
+      "task_label": "4",
+      "task_title": "**Core type traits + ASN.1 concepts**",
+      "session_id": "ses_1f220b531ffe834a3XQNvKF5ag",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-09T17:57:53.780Z"
+    },
+    "todo:5": {
+      "task_key": "todo:5",
+      "task_label": "5",
+      "task_title": "**Error types (`result<T>`, `error_code`)**",
+      "session_id": "ses_1f21b203bffelpjU1C51Y5kWB7",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-09T18:10:02.146Z"
+    },
+    "todo:6": {
+      "task_key": "todo:6",
+      "task_label": "6",
+      "task_title": "**Bit/octet manipulation utilities**",
+      "session_id": "ses_1f20fdc85ffeTc8lkHTEbX3zXe",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-09T18:21:12.261Z"
+    },
+    "todo:7": {
+      "task_key": "todo:7",
+      "task_label": "7",
+      "task_title": "**ASN.1 universal tag registry**",
+      "session_id": "ses_1f2056850ffexz9JwkJyRxXLlN",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-09T18:30:36.747Z"
+    }
+  }
+}
