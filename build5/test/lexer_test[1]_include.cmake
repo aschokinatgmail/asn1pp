@@ -1,5 +1,0 @@
-if(EXISTS "/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/lexer_test[1]_tests.cmake")
-  include("/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/lexer_test[1]_tests.cmake")
-else()
-  add_test(lexer_test_NOT_BUILT lexer_test_NOT_BUILT)
-endif()

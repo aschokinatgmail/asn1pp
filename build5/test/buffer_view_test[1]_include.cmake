@@ -1,5 +1,0 @@
-if(EXISTS "/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/buffer_view_test[1]_tests.cmake")
-  include("/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/buffer_view_test[1]_tests.cmake")
-else()
-  add_test(buffer_view_test_NOT_BUILT buffer_view_test_NOT_BUILT)
-endif()

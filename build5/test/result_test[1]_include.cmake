@@ -1,5 +1,0 @@
-if(EXISTS "/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/result_test[1]_tests.cmake")
-  include("/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/result_test[1]_tests.cmake")
-else()
-  add_test(result_test_NOT_BUILT result_test_NOT_BUILT)
-endif()
