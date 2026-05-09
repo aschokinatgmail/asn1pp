@@ -1,0 +1,57 @@
+{
+  "tests": 9,
+  "name": "AllTests",
+  "testsuites": [
+    {
+      "name": "EmitterBooleanTest",
+      "tests": 9,
+      "testsuite": [
+        {
+          "name": "BooleanStructHasValueMember_UT_BOOLEAN_001",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 15
+        },
+        {
+          "name": "BooleanStructHasOperatorBool_UT_BOOLEAN_002",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 23
+        },
+        {
+          "name": "BooleanHasTagSpecialization_UT_BOOLEAN_003",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 32
+        },
+        {
+          "name": "BooleanOperatorEquals_UT_BOOLEAN_004",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 41
+        },
+        {
+          "name": "NullStructIsEmpty_UT_NULL_001",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 49
+        },
+        {
+          "name": "NullHasOperatorEquals_UT_NULL_002",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 59
+        },
+        {
+          "name": "NullHasTagSpecialization_UT_NULL_003",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 67
+        },
+        {
+          "name": "BooleanCodeCompilesAsValidC20_UT_BOOLEAN_005",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 76
+        },
+        {
+          "name": "NullCodeCompilesAsValidC20_UT_NULL_004",
+          "file": "\/Users\/andreyshchekin\/Documents\/projects\/aschokin\/asn1pp\/test\/gen\/emitter_boolean_test.cpp",
+          "line": 85
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+if(EXISTS "/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/ast_test[1]_tests.cmake")
+  include("/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/ast_test[1]_tests.cmake")
+else()
+  add_test(ast_test_NOT_BUILT ast_test_NOT_BUILT)
+endif()

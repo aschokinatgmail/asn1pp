@@ -137,3 +137,53 @@
 - Parser test suite currently has 99 Parser tests covering module structure, tag defaults, assignments, core builtin types, SEQUENCE/SET/CHOICE, OF types, imports/exports, constraints, tagged types, values, recovery, and real-world patterns.
 - AppleClang/GTest emits `-Wcharacter-conversion` from system-installed gtest headers during parser test compilation unless test targets add `-Wno-character-conversion`; `asn1pp_add_test` now applies it with `-Wno-sign-compare`.
 - Verification run: `cmake --build build` completed, but Apple `ranlib` warns that placeholder codec objects have no symbols; no compiler warnings remained. `ctest --test-dir build -R Parser` and direct `./build/test/parser_test` passed all 99 tests.
+
+## Task 18: SEQUENCE/SET Emitter (2026-05-10)
+
+### Architecture
+- `emit_sequence()` and `emit_set()` functions in `emitter_sequence.hpp/.cpp`
+- Shared `emit_generic` template handles both SEQUENCE and SET (only tag differs)
+- `cpp_type_for_field()` maps ASN.1 types → C++ types via std::visit on type_ref variant
+- Nested types (inline SEQUENCE/SET/ENUMERATED) are emitted as separate struct definitions BEFORE the parent struct
+- Forward declarations needed: `emit_sequence`/`emit_set` called from `cpp_type_for_field` before fully defined → function declarations at namespace scope
+
+### Type Mapping
+| ASN.1 Type | C++ Type |
+|---|---|
+| INTEGER | int64_t |
+| BOOLEAN | bool |
+| NULL | std::monostate |
+| REAL | double |
+| OCTET STRING | std::vector<uint8_t> |
+| BIT STRING | std::pair<std::vector<uint8_t>, size_t> |
+| ENUMERATED | inline struct via emit_enumerated helper |
+| OID / RELATIVE-OID | std::vector<uint32_t> |
+| ANY | std::vector<uint8_t> |
+| SEQUENCE { ... } | inline nested struct |
+| CHOICE | std::variant<...> |
+| SEQUENCE OF T | std::vector<T> |
+| OPTIONAL T | std::optional<T> |
+| DEFAULT T val | T with brace initializer |
+
+### Key Patterns
+- OPTIONAL fields: `std::optional<T>` — no default initializer
+- DEFAULT fields: `T field{value}` — brace initializer with ASN.1 default
+- Extension marker: `std::vector<uint8_t> _extension_data;` appended to struct
+- Tag: `make_universal(universal_tag::sequence, true)` for SEQUENCE, `set` for SET
+- Zero-initialization: `int64_t`, `bool`, `double`, `std::vector`, `std::variant`, `std::pair` get `{}` initializer
+- Referenced/unknown types: no initializer
+
+### Test Structure
+- 34 test cases covering: simple sequences, single field, optional fields, default fields, nested sequences, SET type, extension markers, tagging, all primitive type mappings, C++20 validity, operator==, edge cases (empty, special chars, mixed types, optional+default interaction)
+- Helper `comps()` variadic template avoids initializer_list copy issues with non-copyable component_type
+- String-based assertions: `expect_contains()` / `expect_not_contains()` check generated code
+
+### Build Integration
+- `emitter_sequence.cpp` added to `asn1pp-gen` executable in `src/CMakeLists.txt`
+- `emitter_sequence_test.cpp` added to test list in `test/CMakeLists.txt` with `emitter_sequence.cpp` and `emitter_enumerated.cpp` as linked sources
+- Root `CMakeLists.txt` `add_subdirectory(test)` uncommented (required for test builds)
+
+### Issues Encountered
+- component_type is non-copyable (has unique_ptr<type_ref>) → can't use initializer_list → variadic `comps()` helper with push_back
+- emit_sequence called from cpp_type_for_field before definition → forward declaration needed
+- emitter_sequence.cpp depends on emit_enumerated → added to both asn1pp-gen and test CMake targets

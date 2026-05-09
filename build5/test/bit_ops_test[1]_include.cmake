@@ -1,0 +1,5 @@
+if(EXISTS "/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/bit_ops_test[1]_tests.cmake")
+  include("/Users/andreyshchekin/Documents/projects/aschokin/asn1pp/build5/test/bit_ops_test[1]_tests.cmake")
+else()
+  add_test(bit_ops_test_NOT_BUILT bit_ops_test_NOT_BUILT)
+endif()

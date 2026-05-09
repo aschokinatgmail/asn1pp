@@ -5,6 +5,10 @@ add_executable(asn1pp-gen
     gen/ast_print.cpp
     gen/lexer.cpp
     gen/parser.cpp
+    gen/emitter_integer.cpp
+    gen/emitter_enumerated.cpp
+    gen/emitter_sequence.cpp
+    gen/emitter_string.cpp
 )
 
 target_include_directories(asn1pp-gen

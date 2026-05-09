@@ -1117,7 +1117,7 @@ Max Concurrent: 7 (Wave 1)
 
 ---
 
-- [ ] 14. **INTEGER type generator**
+- [x] 14. **INTEGER type generator**
 
   **What to do**:
   - RED: Test that `generate_integer_type(ast_node)` emits C++ with correct `asn1_tag<>` specialization, `int64_t` storage, constraint enforcement
@@ -1185,7 +1185,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 3 group)
 
-- [ ] 15. **OCTET STRING / BIT STRING generator**
+- [x] 15. **OCTET STRING / BIT STRING generator**
 
   **What to do**:
   - RED: Test both OCTET STRING and BIT STRING generation, including SIZE constraints
@@ -1242,7 +1242,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 3 group)
 
-- [ ] 16. **BOOLEAN + NULL generator**
+- [x] 16. **BOOLEAN + NULL generator**
 
   **What to do**:
   - RED: Test boolean and null type generation — simplest types
@@ -1290,7 +1290,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 3 group)
 
-- [ ] 17. **ENUMERATED generator**
+- [x] 17. **ENUMERATED generator**
 
   **What to do**:
   - RED: Test that `E ::= ENUMERATED { a(0), b(1) }` generates correct C++ with value mapping
@@ -1340,7 +1340,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 3 group)
 
-- [ ] 18. **SEQUENCE generator**
+- [x] 18. **SEQUENCE generator**
 
   **What to do**:
   - RED: Test SEQUENCE generation — multiple fields, OPTIONAL, DEFAULT, nested SEQUENCE
