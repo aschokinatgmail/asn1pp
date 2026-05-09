@@ -7,6 +7,7 @@
 #include <concepts>
 
 #include "codec/traits.hpp"
+#include "codec/codec_interface.hpp"
 
 using namespace asn1pp;
 
@@ -17,16 +18,24 @@ using namespace asn1pp;
 struct MockAsn1Type {};
 
 struct MockEncoder {
-    void encode(const MockAsn1Type&, buffer_view) {}
+    result<void> encode(const MockAsn1Type&, buffer_view&) {
+        return result<void>::ok();
+    }
 };
 
 struct MockDecoder {
-    void decode(buffer_view, MockAsn1Type&) {}
+    result<MockAsn1Type> decode(buffer_view&) {
+        return result<MockAsn1Type>::err(error_code::parse_error);
+    }
 };
 
 struct MockCodec {
-    void encode(const MockAsn1Type&, buffer_view) {}
-    void decode(buffer_view, MockAsn1Type&) {}
+    result<void> encode(const MockAsn1Type&, buffer_view&) {
+        return result<void>::ok();
+    }
+    result<MockAsn1Type> decode(buffer_view&) {
+        return result<MockAsn1Type>::err(error_code::parse_error);
+    }
 };
 
 // An unrelated non-ASN.1 type
@@ -93,41 +102,41 @@ static_assert(!has_tag_v<double>,
               "double (built-in, no specialization) must have_tag_v == false");
 
 // ============================================================================
-// Static assertion tests: encodable_v<T, Encoder>
+// Static assertion tests: encoder_for<E, T>
 // ============================================================================
 
-static_assert(encodable_v<MockAsn1Type, MockEncoder>,
-              "MockAsn1Type with MockEncoder.encode must be encodable_v == true");
-static_assert(not encodable_v<int, MockEncoder>,
-              "int must NOT be encodable_v with MockEncoder (no encode method)");
-static_assert(not encodable_v<NotAsn1, MockEncoder>,
-              "NotAsn1 must NOT be encodable_v with MockEncoder (no encode method)");
+static_assert(encoder_for<MockEncoder, MockAsn1Type>,
+              "MockAsn1Type with MockEncoder.encode must satisfy encoder_for");
+static_assert(!encoder_for<MockEncoder, int>,
+              "int must NOT satisfy encoder_for with MockEncoder (no encode method)");
+static_assert(!encoder_for<MockEncoder, NotAsn1>,
+              "NotAsn1 must NOT satisfy encoder_for with MockEncoder (no encode method)");
 
 // ============================================================================
-// Static assertion tests: decodable_v<T, Decoder>
+// Static assertion tests: decoder_for<D, T>
 // ============================================================================
 
-static_assert(decodable_v<MockAsn1Type, MockDecoder>,
-              "MockAsn1Type with MockDecoder.decode must be decodable_v == true");
-static_assert(not decodable_v<int, MockDecoder>,
-              "int must NOT be decodable_v with MockDecoder (no decode method)");
-static_assert(not decodable_v<NotAsn1, MockDecoder>,
-              "NotAsn1 must NOT be decodable_v with MockDecoder (no decode method)");
+static_assert(decoder_for<MockDecoder, MockAsn1Type>,
+              "MockAsn1Type with MockDecoder.decode must satisfy decoder_for");
+static_assert(!decoder_for<MockDecoder, int>,
+              "int must NOT satisfy decoder_for with MockDecoder (no decode method)");
+static_assert(!decoder_for<MockDecoder, NotAsn1>,
+              "NotAsn1 must NOT satisfy decoder_for with MockDecoder (no decode method)");
 
 // ============================================================================
-// Static assertion tests: codec_for_v<T, Codec>
+// Static assertion tests: codec_for<C, T>
 // ============================================================================
 
-static_assert(codec_for_v<MockAsn1Type, MockCodec>,
-              "MockAsn1Type with MockCodec must be codec_for_v == true");
-static_assert(codec_for_v<MockAsn1Type, MockEncoder>,
-              "MockAsn1Type with MockEncoder (encoder_for) must satisfy codec_for_v == true");
-static_assert(codec_for_v<MockAsn1Type, MockDecoder>,
-              "MockAsn1Type with MockDecoder (decoder_for) must satisfy codec_for_v == true");
-static_assert(not codec_for_v<int, MockCodec>,
-              "int must NOT be codec_for_v with MockCodec");
-static_assert(not codec_for_v<NotAsn1, MockCodec>,
-              "NotAsn1 must NOT be codec_for_v with MockCodec");
+static_assert(codec_for<MockCodec, MockAsn1Type>,
+              "MockAsn1Type with MockCodec must satisfy codec_for");
+static_assert(!codec_for<MockEncoder, MockAsn1Type>,
+              "MockEncoder (encoder only) must NOT satisfy codec_for");
+static_assert(!codec_for<MockDecoder, MockAsn1Type>,
+              "MockDecoder (decoder only) must NOT satisfy codec_for");
+static_assert(!codec_for<MockCodec, int>,
+              "int must NOT satisfy codec_for with MockCodec");
+static_assert(!codec_for<MockCodec, NotAsn1>,
+              "NotAsn1 must NOT satisfy codec_for with MockCodec");
 
 // ============================================================================
 // Static assertion tests: is_sequence_v, is_choice_v, is_set_v
@@ -344,27 +353,27 @@ TEST(TraitsTest, HasTagV) {
 }
 
 // ============================================================================
-// Runtime tests: encodable_v / decodable_v / codec_for_v
+// Runtime tests: encoder_for / decoder_for / codec_for
 // ============================================================================
 
-TEST(TraitsTest, EncodableV) {
-    EXPECT_TRUE((encodable_v<MockAsn1Type, MockEncoder>));
-    EXPECT_FALSE((encodable_v<int, MockEncoder>));
-    EXPECT_FALSE((encodable_v<NotAsn1, MockEncoder>));
+TEST(TraitsTest, EncoderFor) {
+    EXPECT_TRUE((encoder_for<MockEncoder, MockAsn1Type>));
+    EXPECT_FALSE((encoder_for<MockEncoder, int>));
+    EXPECT_FALSE((encoder_for<MockEncoder, NotAsn1>));
 }
 
-TEST(TraitsTest, DecodableV) {
-    EXPECT_TRUE((decodable_v<MockAsn1Type, MockDecoder>));
-    EXPECT_FALSE((decodable_v<int, MockDecoder>));
-    EXPECT_FALSE((decodable_v<NotAsn1, MockDecoder>));
+TEST(TraitsTest, DecoderFor) {
+    EXPECT_TRUE((decoder_for<MockDecoder, MockAsn1Type>));
+    EXPECT_FALSE((decoder_for<MockDecoder, int>));
+    EXPECT_FALSE((decoder_for<MockDecoder, NotAsn1>));
 }
 
-TEST(TraitsTest, CodecForV) {
-    EXPECT_TRUE((codec_for_v<MockAsn1Type, MockCodec>));
-    EXPECT_TRUE((codec_for_v<MockAsn1Type, MockEncoder>));
-    EXPECT_TRUE((codec_for_v<MockAsn1Type, MockDecoder>));
-    EXPECT_FALSE((codec_for_v<int, MockCodec>));
-    EXPECT_FALSE((codec_for_v<NotAsn1, MockCodec>));
+TEST(TraitsTest, CodecFor) {
+    EXPECT_TRUE((codec_for<MockCodec, MockAsn1Type>));
+    EXPECT_FALSE((codec_for<MockEncoder, MockAsn1Type>));
+    EXPECT_FALSE((codec_for<MockDecoder, MockAsn1Type>));
+    EXPECT_FALSE((codec_for<MockCodec, int>));
+    EXPECT_FALSE((codec_for<MockCodec, NotAsn1>));
 }
 
 // ============================================================================

@@ -196,28 +196,6 @@ struct is_set : std::false_type {};
 template<typename T>
 inline constexpr bool is_set_v = is_set<T>::value;
 
-template<typename E, typename T>
-concept encoder_for = requires(E e, const T& val, buffer_view buf) {
-    { e.encode(val, buf) } -> std::same_as<void>;
-};
-
-template<typename D, typename T>
-concept decoder_for = requires(D d, buffer_view buf, T& val) {
-    { d.decode(buf, val) } -> std::same_as<void>;
-};
-
-template<typename C, typename T>
-concept codec_for = encoder_for<C, T> || decoder_for<C, T>;
-
-template<typename T, typename C>
-inline constexpr bool encodable_v = encoder_for<C, T>;
-
-template<typename T, typename C>
-inline constexpr bool decodable_v = decoder_for<C, T>;
-
-template<typename T, typename C>
-inline constexpr bool codec_for_v = codec_for<C, T>;
-
 template<typename T>
 concept asn1_type = requires { typename T::asn1_type_tag; } || has_tag_v<T>;
 

@@ -87,3 +87,22 @@
   - reserved tags 14, 15 verification (not in enum - correct)
   - name string verification
 - **Verification**: 124/124 tests pass, 0 warnings, LSP clean
+
+## Task: Codec Interface Traits (2026-05-10)
+- **Concept conflict resolution**: `traits.hpp` had placeholder `encoder_for`/`decoder_for`/`codec_for` concepts returning `void`. Replaced with result-based concepts in `codec_interface.hpp`. Removed old concepts and `encodable_v`/`decodable_v`/`codec_for_v` variable templates from `traits.hpp`.
+- **Concept semantics change**: `codec_for` now requires BOTH `encoder_for AND decoder_for` (was `||` before). A type that only encodes or only decodes is NOT a full codec.
+- **`decoder_for` signature**: Uses `result<T> decode(buffer_view&)` (non-template, returns `result<T>`), not `void decode(buffer_view&, T&)`. Template decoders that require explicit type parameter do NOT match.
+- **`buffer_view` as mutable reference**: encode/decode signatures take `buffer_view&` (not const) since the view's position may need to advance during encoding/decoding. This differs from the read-only `buffer_view` usage in traits.hpp mock types.
+- **CRTP pattern**: `encoder_base` and `decoder_base` provide stub implementations for `encode_fields`, `encode_tagged`, `decode_tagged` that will be filled in with BER codec. Derived classes inherit without virtual dispatch.
+- **`stateless_codec`**: Uses `std::is_empty_v<C>` — empty codec types have no instance state, enabling zero-cost abstractions.
+- **Test coverage**: 10 runtime tests + 13 static_assert concept tests covering positive/negative encoder_for, decoder_for, codec_for, stateless_codec, and all CRTP base classes.
+
+## Task 9: Codec Interface Traits (2026-05-10)
+- **Files already implemented**: `libs/codec/codec_interface.hpp` and `test/codec/codec_interface_test.cpp` were pre-existing and fully implemented
+- **Concepts defined**: `encoder_for<E,T>`, `decoder_for<D,T>`, `codec_for<C,T>`, `stateless_codec<C>`
+- **CRTP bases**: `encoder_base<Derived>` and `decoder_base<Derived>` with stub `encode_fields`/`encode_tagged`/`decode_tagged`
+- **decoder_for concept**: Uses `d.decode(buf) -> result<T>` (non-template decode), so template `decode<T>(buf)` does NOT match — this is by design
+- **10 tests all pass**: 3 CRTP runtime tests + 7 concept validation tests
+- **CMakeLists already wired**: `asn1pp_add_test(codec_interface_test ...)` was already in test/CMakeLists.txt
+- **Fixed**: Removed unused `#include <concepts>` from test file (was flagged by clangd)
+- **clangd false positive**: `<type_traits>` flagged as unused despite `std::is_empty_v` usage in static_assert — clangd's unused-include heuristic doesn't trace static_assert usages

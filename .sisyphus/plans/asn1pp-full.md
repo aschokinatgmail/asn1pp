@@ -718,7 +718,7 @@ Max Concurrent: 7 (Wave 1)
 
 ---
 
-- [ ] 8. **ASN.1 AST data structures**
+- [x] 8. **ASN.1 AST data structures**
 
   **What to do**:
   - Define AST node types in `src/gen/ast.hpp`:
@@ -777,7 +777,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 2 group)
 
-- [ ] 9. **Codec interface traits (encoder/decoder concepts)**
+- [x] 9. **Codec interface traits (encoder/decoder concepts)**
 
   **What to do**:
   - RED: Write tests verifying concepts constrain encoder/decoder correctly

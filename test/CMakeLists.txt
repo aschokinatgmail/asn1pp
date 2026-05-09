@@ -68,3 +68,7 @@ asn1pp_add_test(bit_ops_test buffer/bit_ops_test.cpp)
 asn1pp_add_test(traits_test codec/traits_test.cpp)
 asn1pp_add_test(tag_test codec/tag_test.cpp)
 asn1pp_add_test(result_test codec/result_test.cpp)
+asn1pp_add_test(codec_interface_test codec/codec_interface_test.cpp)
+
+# Gen module tests
+asn1pp_add_test(ast_test gen/ast_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)

@@ -72,6 +72,24 @@
       "agent": "Sisyphus-Junior",
       "category": "quick",
       "updated_at": "2026-05-09T18:30:36.747Z"
+    },
+    "todo:8": {
+      "task_key": "todo:8",
+      "task_label": "8",
+      "task_title": "**ASN.1 AST data structures**",
+      "session_id": "ses_1f1fbcc90ffeh320DdQBswfDNs",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-09T18:53:02.284Z"
+    },
+    "todo:9": {
+      "task_key": "todo:9",
+      "task_label": "9",
+      "task_title": "**Codec interface traits (encoder/decoder concepts)**",
+      "session_id": "ses_1f1cce86bffePvRRqpOUYJ3e75",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-09T19:27:23.258Z"
     }
   }
 }
