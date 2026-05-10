@@ -59,6 +59,7 @@ enum class token_type {
     kw_all,
     kw_class,
     kw_unique,
+    kw_syntax,
     kw_instance,
 
     assignment,     // ::=

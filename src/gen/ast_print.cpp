@@ -199,6 +199,104 @@ std::string to_string(const bit_string_type& t) {
     return oss.str();
 }
 
+std::string to_string(const type_instantiation& ti) {
+    std::ostringstream oss;
+    oss << ti.type_name;
+    if (!ti.arguments.empty()) {
+        oss << "{";
+        for (size_t i = 0; i < ti.arguments.size(); ++i) {
+            if (i > 0) oss << ", ";
+            std::visit([&oss](const auto& v) {
+                using V = std::decay_t<decltype(v)>;
+                if constexpr (std::is_same_v<V, std::string>) {
+                    oss << v;
+                } else if constexpr (std::is_same_v<V, std::unique_ptr<type_ref>>) {
+                    oss << (v ? to_string(*v) : "<null>");
+                }
+            }, ti.arguments[i].value);
+        }
+        oss << "}";
+    }
+    return oss.str();
+}
+
+std::string to_string(const formal_parameter& fp) {
+    std::ostringstream oss;
+    if (fp.param_type) {
+        oss << *fp.param_type << " : " << fp.name;
+    } else {
+        oss << fp.name;
+    }
+    if (fp.default_value) {
+        oss << " DEFAULT " << *fp.default_value;
+    }
+    return oss.str();
+}
+
+std::string to_string(const parameterized_type_assignment& pta) {
+    std::ostringstream oss;
+    oss << "PARAMETERIZED-TYPE " << pta.name << " { ";
+    for (size_t i = 0; i < pta.parameters.size(); ++i) {
+        if (i > 0) oss << ", ";
+        oss << to_string(pta.parameters[i]);
+    }
+    oss << " } = " << (pta.type ? to_string(*pta.type) : "<null>");
+    return oss.str();
+}
+
+std::string to_string(const class_type& ct) {
+    std::ostringstream oss;
+    oss << "CLASS " << ct.name << " { ";
+    for (size_t i = 0; i < ct.fields.size(); ++i) {
+        if (i > 0) oss << ", ";
+        oss << ct.fields[i].name;
+        if (ct.fields[i].type_name) {
+            oss << " " << *ct.fields[i].type_name;
+        }
+        if (ct.fields[i].optional) oss << " OPTIONAL";
+        if (ct.fields[i].unique) oss << " UNIQUE";
+    }
+    oss << " }";
+    if (!ct.with_syntax.empty()) {
+        oss << " WITH SYNTAX { ";
+        for (size_t i = 0; i < ct.with_syntax.size(); ++i) {
+            oss << ct.with_syntax[i].literal;
+            if (ct.with_syntax[i].field_ref) {
+                oss << " " << *ct.with_syntax[i].field_ref;
+            }
+            if (i + 1 < ct.with_syntax.size()) oss << " ";
+        }
+        oss << " }";
+    }
+    return oss.str();
+}
+
+std::string to_string(const information_object& obj) {
+    std::ostringstream oss;
+    oss << "OBJECT " << obj.name << " : " << obj.class_name;
+    if (!obj.field_values.empty()) {
+        oss << " { ";
+        for (size_t i = 0; i < obj.field_values.size(); ++i) {
+            if (i > 0) oss << ", ";
+            oss << obj.field_values[i].field_name;
+        }
+        oss << " }";
+    }
+    return oss.str();
+}
+
+std::string to_string(const object_set& os) {
+    std::ostringstream oss;
+    oss << "OBJECT-SET " << os.name << " : " << os.class_name << " { ";
+    for (size_t i = 0; i < os.objects.size(); ++i) {
+        if (i > 0) oss << ", ";
+        oss << os.objects[i];
+    }
+    if (os.has_extension) oss << ", ...";
+    oss << " }";
+    return oss.str();
+}
+
 std::string to_string(const type_ref& type) {
     return std::visit([](const auto& t) -> std::string {
         using T = std::decay_t<decltype(t)>;
@@ -238,6 +336,8 @@ std::string to_string(const type_ref& type) {
             return to_string(t);
         } else if constexpr (std::is_same_v<T, constrained_type>) {
             return to_string(t);
+        } else if constexpr (std::is_same_v<T, type_instantiation>) {
+            return to_string(t);
         }
         return "UNKNOWN_TYPE";
     }, type.content);
@@ -264,6 +364,14 @@ std::string to_string(const module_definition& module) {
                 oss << "VALUE-ASSIGNMENT " << a.name << " " << (a.type ? to_string(*a.type) : "<null>") << "\n";
             } else if constexpr (std::is_same_v<T, type_from_object_assignment>) {
                 oss << "TYPE-FROM-OBJECT " << a.name << "\n";
+            } else if constexpr (std::is_same_v<T, parameterized_type_assignment>) {
+                oss << to_string(a) << "\n";
+            } else if constexpr (std::is_same_v<T, class_type>) {
+                oss << to_string(a) << "\n";
+            } else if constexpr (std::is_same_v<T, information_object>) {
+                oss << to_string(a) << "\n";
+            } else if constexpr (std::is_same_v<T, object_set>) {
+                oss << to_string(a) << "\n";
             }
         }, assg.content);
     }

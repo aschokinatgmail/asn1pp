@@ -1,5 +1,6 @@
 add_executable(asn1pp-gen
     gen/main.cpp
+    gen/cli.cpp
     gen/generator.cpp
     gen/schema_parser.cpp
     gen/ast_print.cpp

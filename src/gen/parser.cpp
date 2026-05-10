@@ -68,6 +68,24 @@ void skip_balanced(asn1pp::gen::lexer& lex, asn1pp::gen::token& current,
 
 namespace asn1pp::gen {
 
+namespace {
+[[nodiscard]] std::string token_type_to_string(token_type t) noexcept {
+    switch (t) {
+        case token_type::kw_integer: return "INTEGER";
+        case token_type::kw_boolean: return "BOOLEAN";
+        case token_type::kw_null: return "NULL";
+        case token_type::kw_real: return "REAL";
+        case token_type::kw_octet: return "OCTET STRING";
+        case token_type::kw_bit: return "BIT STRING";
+        case token_type::kw_sequence: return "SEQUENCE";
+        case token_type::kw_set: return "SET";
+        case token_type::kw_choice: return "CHOICE";
+        case token_type::kw_enumerated: return "ENUMERATED";
+        default: return "UNKNOWN";
+    }
+}
+}  // namespace
+
 parser::parser(std::string_view source, std::string_view filename, diagnostic_engine* diag)
     : lexer_(source, filename, diag), diag_(diag)
 {
@@ -353,6 +371,48 @@ asn1pp::result<assignment> parser::parse_assignment() {
     source_location name_loc = current_.loc;
     advance();
 
+    if (current_.type == token_type::identifier && known_classes_.count(current_.value) > 0) {
+        std::string class_name = current_.value;
+        advance();
+
+        if (!check(token_type::assignment)) {
+            error(current_.loc, "expected ::= after class name");
+            return asn1pp::result<assignment>::err(asn1pp::error_code::parse_error);
+        }
+        advance();
+
+        if (check(token_type::left_brace)) {
+            // Lookahead: & starts information object, identifier/ellipsis starts object set
+            auto peeked = lexer_.peek_token();
+            if (peeked.type == token_type::ampersand) {
+                auto obj = parse_information_object_def(name, class_name, name_loc);
+                if (obj.is_ok()) {
+                    assignment a;
+                    a.content = std::move(obj.value());
+                    return asn1pp::result<assignment>::ok(std::move(a));
+                }
+            } else {
+                auto os = parse_object_set_def(name, class_name);
+                if (os.is_ok()) {
+                    assignment a;
+                    a.content = std::move(os.value());
+                    return asn1pp::result<assignment>::ok(std::move(a));
+                }
+            }
+            return asn1pp::result<assignment>::err(asn1pp::error_code::parse_error);
+        }
+    }
+
+    if (check(token_type::left_brace)) {
+        auto pta_result = parse_parameterized_type_assignment(name, name_loc);
+        if (pta_result.is_ok()) {
+            assignment a;
+            a.content = std::move(pta_result.value());
+            return asn1pp::result<assignment>::ok(std::move(a));
+        }
+        return asn1pp::result<assignment>::err(pta_result.error());
+    }
+
     if (!check(token_type::assignment)) {
         if (is_type_keyword() || current_.type == token_type::identifier) {
             auto ty_result = parse_type();
@@ -375,6 +435,16 @@ asn1pp::result<assignment> parser::parse_assignment() {
     }
 
     advance();
+
+    if (check(token_type::kw_class)) {
+        auto cd = parse_class_def(name);
+        if (cd.is_ok()) {
+            assignment a;
+            a.content = std::move(cd.value());
+            return asn1pp::result<assignment>::ok(std::move(a));
+        }
+        return asn1pp::result<assignment>::err(cd.error());
+    }
 
     if (is_type_keyword() || is_builtin_start(current_.type)) {
         return parse_type_assignment(name, name_loc)
@@ -512,6 +582,15 @@ asn1pp::result<type_ref> parser::parse_type() {
         }
 
         advance();
+        if (check(token_type::left_brace)) {
+            auto ti_result = parse_type_instantiation(name);
+            if (ti_result.is_err()) {
+                return asn1pp::result<type_ref>::err(ti_result.error());
+            }
+            type_ref tr;
+            tr.content = std::make_unique<type_instantiation>(std::move(ti_result.value()));
+            return finish_type_with_constraints(std::move(tr));
+        }
         if (check(token_type::left_paren)) {
             auto c = parse_constraint();
             constrained_type ct;
@@ -888,8 +967,18 @@ asn1pp::result<type_ref> parser::parse_constrained_sequence_of() {
 
     sequence_of_type sot;
     sot.element_type = std::make_unique<type_ref>(std::move(elem.value()));
+    type_ref inner_tr;
+    inner_tr.content = std::make_unique<sequence_of_type>(std::move(sot));
+
+    constraint c;
+    c.content = size.value();
+
+    constrained_type ct;
+    ct.underlying_type = std::make_unique<type_ref>(std::move(inner_tr));
+    ct.constraints.push_back(std::move(c));
+
     type_ref tr;
-    tr.content = std::make_unique<sequence_of_type>(std::move(sot));
+    tr.content = std::make_unique<constrained_type>(std::move(ct));
     return asn1pp::result<type_ref>::ok(std::move(tr));
 }
 
@@ -1071,6 +1160,19 @@ asn1pp::result<constraint> parser::parse_constraint() {
         return asn1pp::result<constraint>::ok(std::move(c));
     }
 
+    if (check(token_type::kw_from)) {
+        advance();
+        (void)consume(token_type::left_paren, "expected ( after FROM");
+        auto vr = parse_value_range();
+        if (vr.is_err()) {
+            return asn1pp::result<constraint>::err(vr.error());
+        }
+        c.content = vr.value();
+        (void)consume(token_type::right_paren, "expected ) after FROM range");
+        (void)consume(token_type::right_paren, "expected ) after FROM constraint");
+        return asn1pp::result<constraint>::ok(std::move(c));
+    }
+
     auto vr = parse_value_range();
     if (vr.is_err()) {
         return asn1pp::result<constraint>::err(vr.error());
@@ -1090,14 +1192,18 @@ asn1pp::result<value_range_constraint> parser::parse_value_range() {
     } else if (current_.type == token_type::number) {
         vr.min_value = parse_integer_text<int64_t>(current_.value);
         advance();
+    } else if (current_.type == token_type::character_string) {
+        std::string s = current_.value;
+        advance();
+        if (!s.empty()) vr.min_value = static_cast<int64_t>(static_cast<uint8_t>(s[0]));
     } else {
         error(current_.loc, "expected range lower bound");
         return asn1pp::result<value_range_constraint>::err(asn1pp::error_code::parse_error);
     }
 
     if (!check(token_type::range)) {
-        error(current_.loc, "expected .. in value range constraint");
-        return asn1pp::result<value_range_constraint>::err(asn1pp::error_code::parse_error);
+        vr.max_value = vr.min_value;
+        return asn1pp::result<value_range_constraint>::ok(vr);
     }
     advance();
 
@@ -1107,6 +1213,10 @@ asn1pp::result<value_range_constraint> parser::parse_value_range() {
     } else if (current_.type == token_type::number) {
         vr.max_value = parse_integer_text<int64_t>(current_.value);
         advance();
+    } else if (current_.type == token_type::character_string) {
+        std::string s = current_.value;
+        advance();
+        if (!s.empty()) vr.max_value = static_cast<int64_t>(static_cast<uint8_t>(s[0]));
     } else {
         error(current_.loc, "expected range upper bound");
         return asn1pp::result<value_range_constraint>::err(asn1pp::error_code::parse_error);
@@ -1191,6 +1301,329 @@ asn1pp::result<value_ref> parser::parse_value() {
     }
 
     return asn1pp::result<value_ref>::ok(std::move(vr));
+}
+
+asn1pp::result<parameterized_type_assignment> parser::parse_parameterized_type_assignment(
+    const std::string& name, source_location)
+{
+    parameterized_type_assignment pta;
+    pta.name = name;
+
+    advance();
+
+    while (!check(token_type::right_brace) && !check(token_type::eof)) {
+        if (check(token_type::comma)) {
+            advance();
+            continue;
+        }
+        auto fp = parse_formal_parameter();
+        if (fp.is_ok()) {
+            pta.parameters.push_back(fp.value());
+        } else {
+            synchronize();
+            return asn1pp::result<parameterized_type_assignment>::err(fp.error());
+        }
+    }
+
+    if (!consume_or_recover(token_type::right_brace, "expected } after parameter list")) {
+        return asn1pp::result<parameterized_type_assignment>::err(asn1pp::error_code::parse_error);
+    }
+
+    if (!check(token_type::assignment)) {
+        error(current_.loc, "expected ::= after parameter list");
+        return asn1pp::result<parameterized_type_assignment>::err(asn1pp::error_code::parse_error);
+    }
+    advance();
+
+    auto ty_result = parse_type();
+    if (ty_result.is_err()) {
+        return asn1pp::result<parameterized_type_assignment>::err(ty_result.error());
+    }
+    pta.type = std::make_unique<type_ref>(std::move(ty_result.value()));
+
+    return asn1pp::result<parameterized_type_assignment>::ok(std::move(pta));
+}
+
+asn1pp::result<formal_parameter> parser::parse_formal_parameter() {
+    formal_parameter fp;
+
+    if (current_.type == token_type::identifier && !is_type_keyword()) {
+        fp.name = current_.value;
+        advance();
+
+        if (check(token_type::colon)) {
+            advance();
+            if (is_type_keyword() || current_.type == token_type::identifier) {
+                fp.param_type = fp.name;
+                fp.name = current_.value;
+                advance();
+            } else {
+                error(current_.loc, "expected parameter name after :");
+                return asn1pp::result<formal_parameter>::err(asn1pp::error_code::parse_error);
+            }
+        }
+        return asn1pp::result<formal_parameter>::ok(std::move(fp));
+    }
+
+    if (is_type_keyword()) {
+        std::string type_name;
+        if (current_.type == token_type::identifier) {
+            type_name = current_.value;
+            advance();
+        } else {
+            type_name = token_type_to_string(current_.type);
+            advance();
+        }
+
+        if (!consume_or_recover(token_type::colon, "expected : in formal parameter")) {
+            return asn1pp::result<formal_parameter>::err(asn1pp::error_code::parse_error);
+        }
+
+        if (current_.type == token_type::identifier) {
+            fp.name = current_.value;
+            advance();
+        } else {
+            error(current_.loc, "expected parameter name after :");
+            return asn1pp::result<formal_parameter>::err(asn1pp::error_code::parse_error);
+        }
+
+        fp.param_type = type_name;
+        return asn1pp::result<formal_parameter>::ok(std::move(fp));
+    }
+
+    error(current_.loc, "expected formal parameter");
+    return asn1pp::result<formal_parameter>::err(asn1pp::error_code::parse_error);
+}
+
+asn1pp::result<type_instantiation> parser::parse_type_instantiation(const std::string& type_name) {
+    type_instantiation ti;
+    ti.type_name = type_name;
+
+    advance();  // consume {
+
+    while (!check(token_type::right_brace) && !check(token_type::eof)) {
+        if (check(token_type::comma)) {
+            advance();
+            continue;
+        }
+
+        actual_parameter ap;
+        if (is_type_keyword() || current_.type == token_type::identifier) {
+            auto ty = parse_type();
+            if (ty.is_err()) {
+                return asn1pp::result<type_instantiation>::err(ty.error());
+            }
+            ap.value = std::make_unique<type_ref>(std::move(ty.value()));
+        } else if (current_.type == token_type::number) {
+            ap.value = current_.value;
+            advance();
+        } else {
+            error(current_.loc, "expected type or value in parameter list");
+            return asn1pp::result<type_instantiation>::err(asn1pp::error_code::parse_error);
+        }
+        ti.arguments.push_back(std::move(ap));
+    }
+
+    if (!consume_or_recover(token_type::right_brace, "expected } after parameter list")) {
+        return asn1pp::result<type_instantiation>::err(asn1pp::error_code::parse_error);
+    }
+
+    return asn1pp::result<type_instantiation>::ok(std::move(ti));
+}
+
+// ========================================================================
+// Information Object Class parsing (X.681)
+// ========================================================================
+
+asn1pp::result<class_type> parser::parse_class_def(const std::string& name) {
+    advance();  // consume CLASS
+
+    class_type ct;
+    ct.name = name;
+
+    if (!check(token_type::left_brace)) {
+        error(current_.loc, "expected { after CLASS");
+        return asn1pp::result<class_type>::err(asn1pp::error_code::parse_error);
+    }
+    advance();  // consume {
+
+    while (!check(token_type::right_brace) && !check(token_type::eof)) {
+        if (check(token_type::comma)) {
+            advance();
+            continue;
+        }
+
+        class_field cf;
+        if (check(token_type::ampersand)) {
+            advance();
+            if (current_.type != token_type::identifier) {
+                error(current_.loc, "expected field name after &");
+                return asn1pp::result<class_type>::err(asn1pp::error_code::parse_error);
+            }
+            cf.name = "&" + current_.value;
+            advance();
+
+            if (is_type_keyword() || current_.type == token_type::identifier) {
+                cf.type_name = current_.value;
+                advance();
+                // Handle multi-word types: OCTET STRING, BIT STRING, OBJECT IDENTIFIER
+                if ((cf.type_name == "OCTET" && check_identifier("STRING")) ||
+                    (cf.type_name == "BIT" && check_identifier("STRING")) ||
+                    (cf.type_name == "OBJECT" && check_identifier("IDENTIFIER"))) {
+                    *cf.type_name += " " + current_.value;
+                    advance();
+                }
+            }
+
+            if (check(token_type::kw_unique)) {
+                cf.unique = true;
+                advance();
+            }
+
+            if (check(token_type::kw_optional)) {
+                cf.optional = true;
+                advance();
+            }
+            ct.fields.push_back(std::move(cf));
+        } else {
+            error(current_.loc, "expected &field in CLASS definition");
+            synchronize();
+            return asn1pp::result<class_type>::err(asn1pp::error_code::parse_error);
+        }
+    }
+
+    (void)consume(token_type::right_brace, "expected } after CLASS fields");
+    known_classes_.insert(name);
+
+    if (check(token_type::kw_with)) {
+        advance();
+        if (!check_identifier("SYNTAX") && !check(token_type::kw_syntax)) {
+            error(current_.loc, "expected SYNTAX after WITH");
+            return asn1pp::result<class_type>::err(asn1pp::error_code::parse_error);
+        }
+        advance();
+
+        if (!check(token_type::left_brace)) {
+            error(current_.loc, "expected { after WITH SYNTAX");
+            return asn1pp::result<class_type>::err(asn1pp::error_code::parse_error);
+        }
+        advance();
+
+        while (!check(token_type::right_brace) && !check(token_type::eof)) {
+            with_syntax_item wsi;
+
+            if (check(token_type::character_string)) {
+                wsi.literal = current_.value;
+                advance();
+            } else if (current_.type == token_type::identifier ||
+                       current_.type == token_type::kw_class ||
+                       current_.type == token_type::kw_with ||
+                       current_.type == token_type::kw_syntax ||
+                       current_.type == token_type::kw_integer ||
+                       current_.type == token_type::kw_boolean ||
+                       current_.type == token_type::kw_octet ||
+                       current_.type == token_type::kw_size ||
+                       current_.type == token_type::kw_constraint) {
+                wsi.literal = current_.value;
+                advance();
+            }
+
+            if (check(token_type::ampersand)) {
+                advance();
+                if (current_.type == token_type::identifier) {
+                    wsi.field_ref = "&" + current_.value;
+                    advance();
+                }
+            }
+
+            if (!wsi.literal.empty() || wsi.field_ref.has_value()) {
+                ct.with_syntax.push_back(std::move(wsi));
+            } else {
+                break;
+            }
+        }
+
+        (void)consume(token_type::right_brace, "expected } after WITH SYNTAX");
+    }
+
+    return asn1pp::result<class_type>::ok(std::move(ct));
+}
+
+asn1pp::result<information_object> parser::parse_information_object_def(
+    const std::string& name, const std::string& class_name, source_location)
+{
+    advance();  // consume {
+
+    information_object obj;
+    obj.name = name;
+    obj.class_name = class_name;
+
+    while (!check(token_type::right_brace) && !check(token_type::eof)) {
+        if (check(token_type::comma)) {
+            advance();
+            continue;
+        }
+
+        information_object_field_value fv;
+        if (check(token_type::ampersand)) {
+            advance();
+            if (current_.type == token_type::identifier) {
+                fv.field_name = "&" + current_.value;
+                advance();
+
+                auto val = parse_value();
+                if (val.is_ok()) {
+                    fv.value = val.value();
+                }
+                obj.field_values.push_back(std::move(fv));
+            } else {
+                error(current_.loc, "expected field name after &");
+                break;
+            }
+        } else {
+            error(current_.loc, "expected &fieldName in object value");
+            break;
+        }
+    }
+
+    (void)consume(token_type::right_brace, "expected } after object field values");
+
+    return asn1pp::result<information_object>::ok(std::move(obj));
+}
+
+asn1pp::result<object_set> parser::parse_object_set_def(
+    const std::string& name, const std::string& class_name)
+{
+    advance();  // consume {
+
+    object_set os;
+    os.name = name;
+    os.class_name = class_name;
+
+    while (!check(token_type::right_brace) && !check(token_type::eof)) {
+        if (check(token_type::comma)) {
+            advance();
+            continue;
+        }
+
+        if (check(token_type::ellipsis)) {
+            os.has_extension = true;
+            advance();
+            continue;
+        }
+
+        if (current_.type == token_type::identifier) {
+            os.objects.push_back(current_.value);
+            advance();
+        } else {
+            error(current_.loc, "expected object name in object set");
+            break;
+        }
+    }
+
+    (void)consume(token_type::right_brace, "expected } after object set");
+
+    return asn1pp::result<object_set>::ok(std::move(os));
 }
 
 }  // namespace asn1pp::gen

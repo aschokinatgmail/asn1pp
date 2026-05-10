@@ -125,6 +125,9 @@ std::string cpp_type_for_field(const type_ref& type, const std::string& field_na
                 std::vector<nested_definition> dummy;
                 return cpp_type_for_field(*alt->underlying_type, field_name, dummy);
             }
+            if constexpr (std::is_same_v<T, std::unique_ptr<type_instantiation>>) {
+                return alt->type_name;
+            }
             return "void";
         },
         type.content);

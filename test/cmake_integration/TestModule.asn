@@ -1,0 +1,5 @@
+MyModule DEFINITIONS ::= BEGIN
+    SimpleInteger ::= INTEGER
+    SimpleBoolean ::= BOOLEAN
+    SimpleString ::= IA5String
+END

@@ -19,5 +19,8 @@ std::string to_string(const constrained_type& type);
 std::string to_string(const selection_type& type);
 std::string to_string(const component_type& comp);
 std::string to_string(const constraint& c);
+std::string to_string(const class_type& type);
+std::string to_string(const information_object& obj);
+std::string to_string(const object_set& os);
 
 }  // namespace asn1pp::gen

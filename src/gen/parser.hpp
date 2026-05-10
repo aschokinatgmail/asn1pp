@@ -8,6 +8,7 @@
 
 #include <string>
 #include <string_view>
+#include <unordered_set>
 
 namespace asn1pp::gen {
 
@@ -23,6 +24,7 @@ private:
     lexer lexer_;
     diagnostic_engine* diag_;
     token current_;
+    std::unordered_set<std::string> known_classes_;
 
     // ========================================================================
     // Token management
@@ -98,6 +100,23 @@ private:
     // Values
     // ========================================================================
     asn1pp::result<value_ref> parse_value();
+
+    // ========================================================================
+    // Parameterized types
+    // ========================================================================
+    asn1pp::result<parameterized_type_assignment> parse_parameterized_type_assignment(
+        const std::string& name, source_location loc);
+    asn1pp::result<formal_parameter> parse_formal_parameter();
+    asn1pp::result<type_instantiation> parse_type_instantiation(const std::string& type_name);
+
+    // ========================================================================
+    // Information Object Classes (X.681) — basic support
+    // ========================================================================
+    asn1pp::result<class_type> parse_class_def(const std::string& name);
+    asn1pp::result<information_object> parse_information_object_def(
+        const std::string& name, const std::string& class_name, source_location loc);
+    asn1pp::result<object_set> parse_object_set_def(
+        const std::string& name, const std::string& class_name);
 
     // ========================================================================
     // Helpers

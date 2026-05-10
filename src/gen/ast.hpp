@@ -50,6 +50,7 @@ struct bit_string_type {
 };
 
 struct type_ref;
+struct type_instantiation;
 struct sequence_type;
 struct set_type;
 struct choice_type;
@@ -57,6 +58,10 @@ struct sequence_of_type;
 struct set_of_type;
 struct tagged_type;
 struct constrained_type;
+struct class_type;
+struct information_object;
+struct object_set;
+struct value_ref;
 
 struct type_ref {
     using variant_type = std::variant<
@@ -77,7 +82,8 @@ struct type_ref {
         std::unique_ptr<sequence_of_type>,
         std::unique_ptr<set_of_type>,
         std::unique_ptr<tagged_type>,
-        std::unique_ptr<constrained_type>
+        std::unique_ptr<constrained_type>,
+        std::unique_ptr<type_instantiation>
     >;
     variant_type content;
 
@@ -201,6 +207,68 @@ struct value_ref {
     variant_type content;
 };
 
+// ========================================================================
+// Information Object Classes (X.681) — basic support
+// ========================================================================
+
+struct class_field {
+    std::string name;  // includes leading &
+    std::optional<std::string> type_name;  // nullopt = open type
+    bool optional = false;
+    bool unique = false;
+    std::optional<std::string> default_value;
+};
+
+struct with_syntax_item {
+    std::string literal;
+    std::optional<std::string> field_ref;  // nullopt for literal-only items
+};
+
+struct class_type {
+    std::string name;
+    std::vector<class_field> fields;
+    std::vector<with_syntax_item> with_syntax;
+};
+
+struct information_object_field_value {
+    std::string field_name;  // &fieldName
+    value_ref value;
+};
+
+struct information_object {
+    std::string name;
+    std::string class_name;  // class this object belongs to
+    std::vector<information_object_field_value> field_values;
+};
+
+struct object_set {
+    std::string name;
+    std::string class_name;
+    std::vector<std::string> objects;  // referenced object names
+    bool has_extension = false;
+};
+
+struct formal_parameter {
+    std::string name;
+    std::optional<std::string> param_type;    // nullopt = type parameter, present = value parameter of that type
+    std::optional<int64_t> default_value;
+};
+
+struct actual_parameter {
+    std::variant<std::string, std::unique_ptr<type_ref>> value;
+};
+
+struct type_instantiation {
+    std::string type_name;
+    std::vector<actual_parameter> arguments;
+};
+
+struct parameterized_type_assignment {
+    std::string name;
+    std::vector<formal_parameter> parameters;
+    std::unique_ptr<type_ref> type;
+};
+
 struct type_assignment {
     std::string name;
     std::unique_ptr<type_ref> type;
@@ -222,7 +290,11 @@ struct assignment {
     using variant_type = std::variant<
         type_assignment,
         value_assignment,
-        type_from_object_assignment
+        type_from_object_assignment,
+        parameterized_type_assignment,
+        class_type,
+        information_object,
+        object_set
     >;
     variant_type content;
 

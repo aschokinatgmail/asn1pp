@@ -48,6 +48,7 @@ const std::unordered_map<std::string, token_type>& lexer::keyword_table() {
         {"ALL",        token_type::kw_all},
         {"CLASS",      token_type::kw_class},
         {"UNIQUE",     token_type::kw_unique},
+        {"SYNTAX",     token_type::kw_syntax},
         {"INSTANCE",   token_type::kw_instance},
     };
     return table;

@@ -91,6 +91,21 @@ asn1pp_add_test(EmitterOid_test gen/emitter_oid_test.cpp ${CMAKE_SOURCE_DIR}/src
 asn1pp_add_test(emitter_sequence_of_test gen/emitter_sequence_of_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence_of.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
 asn1pp_add_test(per_meta_test gen/emitter_per_meta_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_per_meta.cpp)
 asn1pp_add_test(emitter_time_test gen/emitter_time_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_time.cpp)
+asn1pp_add_test(emitter_ioc_test gen/emitter_ioc_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_ioc.cpp)
+
+# Tagged types tests
+asn1pp_add_test(tagged_codec_test codec/tagged_codec_test.cpp)
+asn1pp_add_test(emitter_tagged_test gen/emitter_tagged_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_tagged.cpp)
+
+# Parameterized types tests
+asn1pp_add_test(parser_parameterized_test gen/parser_parameterized_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
+asn1pp_add_test(emitter_parameterized_test gen/emitter_parameterized_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_parameterized.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_enumerated.cpp)
 
 # Integration tests
 asn1pp_add_test(der_roundtrip_test integration/der_roundtrip_test.cpp)
+
+# End-to-end tests
+asn1pp_add_test(x509_der_test e2e/x509_der_test.cpp)
+
+# End-to-end tests
+asn1pp_add_test(rrc_per_test e2e/rrc_per_test.cpp)

@@ -38,23 +38,26 @@ bool emit_integer_per_meta(std::ostringstream& oss,
                             const std::vector<constraint>& constraints) {
     const auto* vrc = find_range_constraint(constraints);
 
-    oss << "struct " << type_name << "_per_meta {\n";
+    for (int pass = 0; pass < 2; ++pass) {
+        const char* sfx = (pass == 0) ? "_per_meta" : "_oer_meta";
+        oss << "struct " << type_name << sfx << " {\n";
 
-    if (vrc) {
-        oss << "    static constexpr int64_t min_value = "
-            << (vrc->min_value.has_value() ? std::to_string(*vrc->min_value) : "0") << ";\n";
-        oss << "    static constexpr int64_t max_value = "
-            << (vrc->max_value.has_value() ? std::to_string(*vrc->max_value) : std::to_string(INT64_MAX)) << ";\n";
-        oss << "    static constexpr bool has_range_constraint = true;\n";
-        oss << "    static constexpr bool is_extension_permitted = false;\n";
-    } else {
-        oss << "    static constexpr int64_t min_value = 0;\n";
-        oss << "    static constexpr int64_t max_value = " << INT64_MAX << ";\n";
-        oss << "    static constexpr bool has_range_constraint = false;\n";
-        oss << "    static constexpr bool is_extension_permitted = false;\n";
+        if (vrc) {
+            oss << "    static constexpr int64_t min_value = "
+                << (vrc->min_value.has_value() ? std::to_string(*vrc->min_value) : "0") << ";\n";
+            oss << "    static constexpr int64_t max_value = "
+                << (vrc->max_value.has_value() ? std::to_string(*vrc->max_value) : std::to_string(INT64_MAX)) << ";\n";
+            oss << "    static constexpr bool has_range_constraint = true;\n";
+            oss << "    static constexpr bool is_extension_permitted = false;\n";
+        } else {
+            oss << "    static constexpr int64_t min_value = 0;\n";
+            oss << "    static constexpr int64_t max_value = " << INT64_MAX << ";\n";
+            oss << "    static constexpr bool has_range_constraint = false;\n";
+            oss << "    static constexpr bool is_extension_permitted = false;\n";
+        }
+
+        oss << "};\n";
     }
-
-    oss << "};\n";
     return true;
 }
 
@@ -63,23 +66,26 @@ bool emit_octet_string_per_meta(std::ostringstream& oss,
                                  const std::vector<constraint>& constraints) {
     const auto* sc = find_size_constraint(constraints);
 
-    oss << "struct " << type_name << "_per_meta {\n";
+    for (int pass = 0; pass < 2; ++pass) {
+        const char* sfx = (pass == 0) ? "_per_meta" : "_oer_meta";
+        oss << "struct " << type_name << sfx << " {\n";
 
-    if (sc) {
-        oss << "    static constexpr size_t min_size = "
-            << (sc->min_size.has_value() ? std::to_string(*sc->min_size) : "0") << ";\n";
-        oss << "    static constexpr size_t max_size = "
-            << (sc->max_size.has_value() ? std::to_string(*sc->max_size) : std::to_string(SIZE_MAX)) << ";\n";
-        oss << "    static constexpr bool has_size_constraint = true;\n";
-        oss << "    static constexpr bool is_extension_permitted = false;\n";
-    } else {
-        oss << "    static constexpr size_t min_size = 0;\n";
-        oss << "    static constexpr size_t max_size = " << SIZE_MAX << ";\n";
-        oss << "    static constexpr bool has_size_constraint = false;\n";
-        oss << "    static constexpr bool is_extension_permitted = false;\n";
+        if (sc) {
+            oss << "    static constexpr size_t min_size = "
+                << (sc->min_size.has_value() ? std::to_string(*sc->min_size) : "0") << ";\n";
+            oss << "    static constexpr size_t max_size = "
+                << (sc->max_size.has_value() ? std::to_string(*sc->max_size) : std::to_string(SIZE_MAX)) << ";\n";
+            oss << "    static constexpr bool has_size_constraint = true;\n";
+            oss << "    static constexpr bool is_extension_permitted = false;\n";
+        } else {
+            oss << "    static constexpr size_t min_size = 0;\n";
+            oss << "    static constexpr size_t max_size = " << SIZE_MAX << ";\n";
+            oss << "    static constexpr bool has_size_constraint = false;\n";
+            oss << "    static constexpr bool is_extension_permitted = false;\n";
+        }
+
+        oss << "};\n";
     }
-
-    oss << "};\n";
     return true;
 }
 

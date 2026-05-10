@@ -425,19 +425,139 @@ TEST(ParserExports, EmptyExports) {
 // 18. Constraints
 // ============================================================================
 
-TEST(ParserConstraint, ValueRangeInt) {
+static const type_assignment* find_type(const module_definition& mod, std::string_view name) {
+    for (const auto& asgn : mod.assignments)
+        if (auto* ta = std::get_if<type_assignment>(&asgn.content))
+            if (ta->name == name) return ta;
+    return nullptr;
+}
+
+static const constrained_type* get_ct(const type_ref& t) {
+    return t.holds_ptr<constrained_type>() ? &t.get_ptr<constrained_type>() : nullptr;
+}
+
+static const value_range_constraint* get_vrc(const constrained_type& ct) {
+    for (const auto& c : ct.constraints)
+        if (std::holds_alternative<value_range_constraint>(c.content))
+            return &std::get<value_range_constraint>(c.content);
+    return nullptr;
+}
+
+static const size_constraint* get_sc(const constrained_type& ct) {
+    for (const auto& c : ct.constraints)
+        if (std::holds_alternative<size_constraint>(c.content))
+            return &std::get<size_constraint>(c.content);
+    return nullptr;
+}
+
+TEST(ParserConstraint, IntegerRange0to255) {
     ParseResult r("M DEFINITIONS ::= BEGIN T ::= INTEGER (0..255) END");
     EXPECT_TRUE(r.ok());
+    auto* ta = find_type(r.mod(), "T");
+    ASSERT_NE(ta, nullptr);
+    auto* ct = get_ct(*ta->type);
+    ASSERT_NE(ct, nullptr);
+    auto* vrc = get_vrc(*ct);
+    ASSERT_NE(vrc, nullptr);
+    ASSERT_TRUE(vrc->min_value.has_value());
+    EXPECT_EQ(*vrc->min_value, 0);
+    ASSERT_TRUE(vrc->max_value.has_value());
+    EXPECT_EQ(*vrc->max_value, 255);
 }
 
-TEST(ParserConstraint, SizeConstraint) {
-    ParseResult r("M DEFINITIONS ::= BEGIN T ::= OCTET STRING (SIZE (1..1024)) END");
-    EXPECT_TRUE(r.ok());
-}
-
-TEST(ParserConstraint, MinMaxConstraint) {
+TEST(ParserConstraint, IntegerMinToMax) {
     ParseResult r("M DEFINITIONS ::= BEGIN T ::= INTEGER (MIN..MAX) END");
     EXPECT_TRUE(r.ok());
+    auto* ct = get_ct(*find_type(r.mod(), "T")->type);
+    auto* vrc = get_vrc(*ct);
+    ASSERT_NE(vrc, nullptr);
+    EXPECT_FALSE(vrc->min_value.has_value());
+    EXPECT_FALSE(vrc->max_value.has_value());
+}
+
+TEST(ParserConstraint, IntegerLowerBoundOnly) {
+    ParseResult r("M DEFINITIONS ::= BEGIN T ::= INTEGER (10..MAX) END");
+    EXPECT_TRUE(r.ok());
+    auto* vrc = get_vrc(*get_ct(*find_type(r.mod(), "T")->type));
+    ASSERT_NE(vrc, nullptr);
+    ASSERT_TRUE(vrc->min_value.has_value());
+    EXPECT_EQ(*vrc->min_value, 10);
+    EXPECT_FALSE(vrc->max_value.has_value());
+}
+
+TEST(ParserConstraint, IntegerSingleValue) {
+    ParseResult r("M DEFINITIONS ::= BEGIN T ::= INTEGER (100) END");
+    EXPECT_TRUE(r.ok());
+    auto* vrc = get_vrc(*get_ct(*find_type(r.mod(), "T")->type));
+    ASSERT_NE(vrc, nullptr);
+    ASSERT_TRUE(vrc->min_value.has_value());
+    EXPECT_EQ(*vrc->min_value, 100);
+    ASSERT_TRUE(vrc->max_value.has_value());
+    EXPECT_EQ(*vrc->max_value, 100);
+}
+
+TEST(ParserConstraint, OctetStringSizeRange) {
+    ParseResult r("M DEFINITIONS ::= BEGIN T ::= OCTET STRING (SIZE (1..32)) END");
+    EXPECT_TRUE(r.ok());
+    auto* sc = get_sc(*get_ct(*find_type(r.mod(), "T")->type));
+    ASSERT_NE(sc, nullptr);
+    ASSERT_TRUE(sc->min_size.has_value());
+    EXPECT_EQ(*sc->min_size, 1u);
+    ASSERT_TRUE(sc->max_size.has_value());
+    EXPECT_EQ(*sc->max_size, 32u);
+}
+
+TEST(ParserConstraint, OctetStringExactSize) {
+    ParseResult r("M DEFINITIONS ::= BEGIN T ::= OCTET STRING (SIZE (16)) END");
+    EXPECT_TRUE(r.ok());
+    auto* sc = get_sc(*get_ct(*find_type(r.mod(), "T")->type));
+    ASSERT_NE(sc, nullptr);
+    ASSERT_TRUE(sc->min_size.has_value());
+    EXPECT_EQ(*sc->min_size, 16u);
+    ASSERT_TRUE(sc->max_size.has_value());
+    EXPECT_EQ(*sc->max_size, 16u);
+}
+
+TEST(ParserConstraint, BitStringSize) {
+    ParseResult r("M DEFINITIONS ::= BEGIN T ::= BIT STRING (SIZE (16)) END");
+    EXPECT_TRUE(r.ok());
+    auto* sc = get_sc(*get_ct(*find_type(r.mod(), "T")->type));
+    ASSERT_NE(sc, nullptr);
+    ASSERT_TRUE(sc->min_size.has_value());
+    EXPECT_EQ(*sc->min_size, 16u);
+}
+
+TEST(ParserConstraint, SequenceOfSize) {
+    ParseResult r("M DEFINITIONS ::= BEGIN List ::= SEQUENCE SIZE (0..10) OF INTEGER END");
+    EXPECT_TRUE(r.ok());
+    auto* sc = get_sc(*get_ct(*find_type(r.mod(), "List")->type));
+    ASSERT_NE(sc, nullptr);
+    ASSERT_TRUE(sc->min_size.has_value());
+    EXPECT_EQ(*sc->min_size, 0u);
+    ASSERT_TRUE(sc->max_size.has_value());
+    EXPECT_EQ(*sc->max_size, 10u);
+}
+
+TEST(ParserConstraint, AlphabetFromAZ) {
+    ParseResult r("M DEFINITIONS ::= BEGIN T ::= PrintableString (FROM (\"A\"..\"Z\")) END");
+    EXPECT_TRUE(r.ok());
+    auto* ct = get_ct(*find_type(r.mod(), "T")->type);
+    ASSERT_NE(ct, nullptr);
+    ASSERT_GE(ct->constraints.size(), 1u);
+    EXPECT_TRUE(std::holds_alternative<value_range_constraint>(ct->constraints[0].content));
+}
+
+TEST(ParserConstraint, ExtensionConstraint) {
+    ParseResult r("M DEFINITIONS ::= BEGIN T ::= INTEGER (...) END");
+    EXPECT_TRUE(r.ok());
+}
+
+TEST(ParserConstraint, UnconstrainedInteger) {
+    ParseResult r("M DEFINITIONS ::= BEGIN T ::= INTEGER END");
+    EXPECT_TRUE(r.ok());
+    auto* ta = find_type(r.mod(), "T");
+    ASSERT_NE(ta, nullptr);
+    EXPECT_TRUE(ta->type->holds_alternative<integer_type>());
 }
 
 // ============================================================================
@@ -698,6 +818,152 @@ TEST(ParserAccess, parse_moduleWithImport) {
     ParseResult r("M DEFINITIONS ::= BEGIN IMPORTS TypeA FROM ModB ; A ::= INTEGER END");
     EXPECT_TRUE(r.ok());
     EXPECT_EQ(r.mod().assignments.size(), 1u);
+}
+
+// ============================================================================
+// Information Object Class (X.681) parsing
+// ============================================================================
+
+TEST(ParserIOC, ParseSimpleClassDef) {
+    ParseResult r(
+        "M DEFINITIONS ::= BEGIN "
+        "OPERATION ::= CLASS { &errorCode INTEGER UNIQUE } "
+        "END");
+    EXPECT_TRUE(r.ok());
+    ASSERT_EQ(r.mod().assignments.size(), 1u);
+    auto& ct = std::get<class_type>(r.mod().assignments[0].content);
+    EXPECT_EQ(ct.name, "OPERATION");
+    ASSERT_EQ(ct.fields.size(), 1u);
+    EXPECT_EQ(ct.fields[0].name, "&errorCode");
+    EXPECT_TRUE(ct.fields[0].type_name.has_value());
+    EXPECT_EQ(*ct.fields[0].type_name, "INTEGER");
+    EXPECT_TRUE(ct.fields[0].unique);
+}
+
+TEST(ParserIOC, ParseClassMultipleFields) {
+    ParseResult r(
+        "M DEFINITIONS ::= BEGIN "
+        "OPERATION ::= CLASS { &errorCode INTEGER UNIQUE, &ParameterType, &resultType BOOLEAN OPTIONAL } "
+        "END");
+    EXPECT_TRUE(r.ok());
+    auto& ct = std::get<class_type>(r.mod().assignments[0].content);
+    ASSERT_EQ(ct.fields.size(), 3u);
+
+    EXPECT_EQ(ct.fields[0].name, "&errorCode");
+    EXPECT_TRUE(ct.fields[0].unique);
+    ASSERT_TRUE(ct.fields[0].type_name.has_value());
+    EXPECT_EQ(*ct.fields[0].type_name, "INTEGER");
+
+    EXPECT_EQ(ct.fields[1].name, "&ParameterType");
+    EXPECT_FALSE(ct.fields[1].type_name.has_value());  // open type
+
+    EXPECT_EQ(ct.fields[2].name, "&resultType");
+    EXPECT_TRUE(ct.fields[2].optional);
+    ASSERT_TRUE(ct.fields[2].type_name.has_value());
+    EXPECT_EQ(*ct.fields[2].type_name, "BOOLEAN");
+}
+
+TEST(ParserIOC, ParseClassWithSyntaxClause) {
+    ParseResult r(
+        "M DEFINITIONS ::= BEGIN "
+        "OPERATION ::= CLASS { &errorCode INTEGER UNIQUE } "
+        "WITH SYNTAX { ERRORCODE &errorCode } "
+        "END");
+    EXPECT_TRUE(r.ok());
+    auto& ct = std::get<class_type>(r.mod().assignments[0].content);
+    ASSERT_EQ(ct.with_syntax.size(), 1u);
+    EXPECT_EQ(ct.with_syntax[0].literal, "ERRORCODE");
+    ASSERT_TRUE(ct.with_syntax[0].field_ref.has_value());
+    EXPECT_EQ(*ct.with_syntax[0].field_ref, "&errorCode");
+}
+
+TEST(ParserIOC, ParseInformationObject) {
+    ParseResult r(
+        "M DEFINITIONS ::= BEGIN "
+        "ERROR ::= CLASS { &code INTEGER UNIQUE, &severity BOOLEAN } "
+        "myError ERROR ::= { &code 42, &severity TRUE } "
+        "END");
+    EXPECT_TRUE(r.ok()) << "Parse should succeed";
+    ASSERT_EQ(r.mod().assignments.size(), 2u);
+
+    // First assignment: CLASS definition
+    auto& ct = std::get<class_type>(r.mod().assignments[0].content);
+    EXPECT_EQ(ct.name, "ERROR");
+
+    // Second assignment: information object
+    auto& obj = std::get<information_object>(r.mod().assignments[1].content);
+    EXPECT_EQ(obj.name, "myError");
+    EXPECT_EQ(obj.class_name, "ERROR");
+    ASSERT_EQ(obj.field_values.size(), 2u);
+    EXPECT_EQ(obj.field_values[0].field_name, "&code");
+    EXPECT_EQ(std::get<int64_t>(obj.field_values[0].value.content), 42);
+    EXPECT_EQ(obj.field_values[1].field_name, "&severity");
+    EXPECT_EQ(std::get<bool>(obj.field_values[1].value.content), true);
+}
+
+TEST(ParserIOC, ParseObjectSet) {
+    ParseResult r(
+        "M DEFINITIONS ::= BEGIN "
+        "ERROR ::= CLASS { &code INTEGER UNIQUE } "
+        "Errors ERROR ::= { e1, e2, e3 } "
+        "END");
+    EXPECT_TRUE(r.ok()) << "Parse should succeed";
+    ASSERT_EQ(r.mod().assignments.size(), 2u);
+
+    auto& os = std::get<object_set>(r.mod().assignments[1].content);
+    EXPECT_EQ(os.name, "Errors");
+    EXPECT_EQ(os.class_name, "ERROR");
+    ASSERT_EQ(os.objects.size(), 3u);
+    EXPECT_EQ(os.objects[0], "e1");
+    EXPECT_EQ(os.objects[1], "e2");
+    EXPECT_EQ(os.objects[2], "e3");
+    EXPECT_FALSE(os.has_extension);
+}
+
+TEST(ParserIOC, ParseObjectSetWithExtension) {
+    ParseResult r(
+        "M DEFINITIONS ::= BEGIN "
+        "ERROR ::= CLASS { &code INTEGER UNIQUE } "
+        "Errors ERROR ::= { e1, ..., e2 } "
+        "END");
+    EXPECT_TRUE(r.ok()) << "Parse should succeed";
+
+    auto& os = std::get<object_set>(r.mod().assignments[1].content);
+    EXPECT_TRUE(os.has_extension);
+    ASSERT_EQ(os.objects.size(), 2u);
+    EXPECT_EQ(os.objects[0], "e1");
+    EXPECT_EQ(os.objects[1], "e2");
+}
+
+TEST(ParserIOC, ParseClassWithOptionalAndUnique) {
+    ParseResult r(
+        "M DEFINITIONS ::= BEGIN "
+        "MSG ::= CLASS { &id INTEGER UNIQUE, &data OCTET STRING OPTIONAL, &flag BOOLEAN } "
+        "END");
+    EXPECT_TRUE(r.ok());
+    auto& ct = std::get<class_type>(r.mod().assignments[0].content);
+    ASSERT_EQ(ct.fields.size(), 3u);
+    EXPECT_TRUE(ct.fields[0].unique);
+    EXPECT_TRUE(ct.fields[1].optional);
+    EXPECT_FALSE(ct.fields[2].unique);
+    EXPECT_FALSE(ct.fields[2].optional);
+}
+
+TEST(ParserIOC, ParseFullIocModule) {
+    ParseResult r(
+        "M DEFINITIONS ::= BEGIN "
+        "OPERATION ::= CLASS { "
+        "  &errorCode INTEGER UNIQUE, "
+        "  &ParameterType, "
+        "  &resultType BOOLEAN OPTIONAL "
+        "} "
+        "WITH SYNTAX { ERRORCODE &errorCode PARAMETER &ParameterType RESULT &resultType } "
+        "END");
+    EXPECT_TRUE(r.ok());
+    auto& ct = std::get<class_type>(r.mod().assignments[0].content);
+    EXPECT_EQ(ct.name, "OPERATION");
+    ASSERT_EQ(ct.fields.size(), 3u);
+    ASSERT_GE(ct.with_syntax.size(), 3u);
 }
 
 }  // namespace
