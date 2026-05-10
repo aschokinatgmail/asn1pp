@@ -8,6 +8,7 @@ add_library(asn1pp-codec STATIC
     # BER encoder/decoder
     codec/ber/ber_encoder.cpp
     codec/ber/ber_decoder.cpp
+    codec/ber/der_encoder.cpp
 
     # PER encoder/decoder
     codec/per/per_encoder.cpp

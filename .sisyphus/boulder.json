@@ -135,6 +135,33 @@
       "agent": "Sisyphus-Junior",
       "category": "quick",
       "updated_at": "2026-05-09T23:49:55.195Z"
+    },
+    "todo:20": {
+      "task_key": "todo:20",
+      "task_label": "20",
+      "task_title": "**BER encoder (TDD)**",
+      "session_id": "ses_1f0bd02cbffePPnxUexnPYngYx",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-10T00:25:14.473Z"
+    },
+    "todo:21": {
+      "task_key": "todo:21",
+      "task_label": "21",
+      "task_title": "**BER decoder (TDD)**",
+      "session_id": "ses_1f0b81a2bffeseYaP8FvbV9V3B",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-10T00:42:12.013Z"
+    },
+    "todo:22": {
+      "task_key": "todo:22",
+      "task_label": "22",
+      "task_title": "**DER canonical validation layer**",
+      "session_id": "ses_1f0a93702ffeXhmI56WqLwrjhF",
+      "agent": "Sisyphus-Junior",
+      "category": "quick",
+      "updated_at": "2026-05-10T01:13:27.159Z"
     }
   }
 }

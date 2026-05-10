@@ -1473,7 +1473,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 4 group)
 
-- [ ] 20. **BER encoder (TDD)**
+- [x] 20. **BER encoder (TDD)**
 
   **What to do**:
   - RED: Write tests — encode INTEGER, encode BOOLEAN, encode NULL, encode OCTET STRING, encode SEQUENCE, encode ENUMERATED; verify output bytes against known BER values
@@ -1550,7 +1550,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 4 group)
 
-- [ ] 21. **BER decoder (TDD)**
+- [x] 21. **BER decoder (TDD)**
 
   **What to do**:
   - RED: Write tests — decode INTEGER, BOOLEAN, NULL, OCTET STRING, SEQUENCE from known BER bytes
@@ -1627,7 +1627,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 4 group)
 
-- [ ] 22. **DER canonical validation layer**
+- [x] 22. **DER canonical validation layer**
 
   **What to do**:
   - RED: Test that DER rejects non-canonical BER — e.g., BOOLEAN with value 0x42 (not 0x00 or 0xFF), INTEGER with unnecessary leading zero octets, constructed STRING with indefinite length

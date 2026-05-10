@@ -224,3 +224,29 @@
 - `cmake --build build` — zero warnings on asn1pp-codec sources
 - `ctest --test-dir build` — 596/596 passing (531 existing + 65 new)
 - LSP diagnostics — clean on both new files
+
+## Task 20: BER Encoder (2026-05-10)
+- **Name collision**: Member function `encode_tlv()` shadows free function `ber::encode_tlv()` with different parameter order (free fn takes `(buf, tag, value)`, member took `(buf, tag, value)` but was called with wrong arg order). Fixed with explicit `ber::encode_tlv()` qualification.
+- **Integer encoding**: Two's complement, big-endian, minimal. Leading 0x00 needed for positive values with MSB set, leading 0xFF for negative values with MSB clear.
+- **BIT STRING**: First content octet = unused bits count (0-7), followed by data.
+- **OCTET STRING long form**: 200 bytes needs `0x81 0xC8` (1 length byte, not 2).
+- **encode_sequence_header** takes arbitrary tag (not just SEQUENCE), enabling SET encoding too.
+- **encode_sequence_end** delegates to `encode_end_of_content()` from tlv.hpp.
+- All 48 encoder tests pass; full suite (665 tests) passes with zero regressions.
+- Zero LSP diagnostics across all changed files.
+
+## Task 21: BER Decoder (2026-05-10)
+- Created `libs/codec/ber/decoder.hpp` — `ber_decoder` class in `asn1pp::ber`
+- Created `libs/codec/ber/ber_decoder.cpp` — full implementation (was empty placeholder)
+- Uses `decode_tag()` and `decode_length()` from tlv.hpp as building blocks
+- `decode_integer_value()` handles two's complement sign-extension for all lengths 1-8
+- BER BOOLEAN: any non-zero = true (not just 0xFF like DER)
+- `decode_sequence_header()` only accepts constructed tags; non-constructed → invalid_tag
+- `skip_tlv()` delegates to decode_tag + decode_length + pointer advance
+- `peek_tag()` creates a copy of buffer_view, calls decode_tag, returns tag without advancing
+- `libs/CMakeLists.txt` already referenced `ber_decoder.cpp` — no change needed
+- Test suite: 71 tests across 14 categories (INTEGER, BOOLEAN, NULL, OCTET STRING, BIT STRING, ENUMERATED, SEQUENCE, OID, Error handling, Generic TLV, Skip TLV, Peek tag, End-of-content, Round-trip)
+- All 71 tests pass; zero regressions on existing 48 encoder tests
+- Build: zero warnings, zero LSP diagnostics
+- **Bug**: Local variable named `result` shadows `result<T>` template — renamed to `octets`/`oid_bytes`
+- **Bug**: `skip_tlv` returned `tag_res` (result<tag>) instead of converting to result<void> — fixed

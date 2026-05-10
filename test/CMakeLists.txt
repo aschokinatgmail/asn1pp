@@ -72,6 +72,9 @@ asn1pp_add_test(codec_interface_test codec/codec_interface_test.cpp)
 
 # BER module tests
 asn1pp_add_test(tlv_test codec/ber/tlv_test.cpp)
+asn1pp_add_test(encoder_test codec/ber/encoder_test.cpp)
+asn1pp_add_test(decoder_test codec/ber/decoder_test.cpp)
+asn1pp_add_test(der_encoder_test codec/ber/der_encoder_test.cpp)
 
 # Gen module tests
 asn1pp_add_test(ast_test gen/ast_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
