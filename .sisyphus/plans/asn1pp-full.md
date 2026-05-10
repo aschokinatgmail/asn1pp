@@ -1687,7 +1687,7 @@ Max Concurrent: 7 (Wave 1)
 
 ---
 
-- [ ] 23. **CHOICE generator**
+- [x] 23. **CHOICE generator**
 
   **What to do**:
   - RED: Test CHOICE generation — `C ::= CHOICE { a INTEGER, b BOOLEAN }` generates variant type
@@ -1743,7 +1743,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 5 group)
 
-- [ ] 24. **SEQUENCE OF / SET OF generator**
+- [x] 24. **SEQUENCE OF / SET OF generator**
 
   **What to do**:
   - RED: Test `SEQUENCE OF INTEGER` → `std::vector<int64_t>`, `SEQUENCE OF MyType` → `std::vector<MyType>`
@@ -1793,7 +1793,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 5 group)
 
-- [ ] 25. **OBJECT IDENTIFIER + RELATIVE-OID generator**
+- [x] 25. **OBJECT IDENTIFIER + RELATIVE-OID generator**
 
   **What to do**:
   - RED: Test OID generation — value assignment, dotted notation, name form
@@ -1844,7 +1844,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 5 group)
 
-- [ ] 26. **Time types generator (UTCTime, GeneralizedTime)**
+- [x] 26. **Time types generator (UTCTime, GeneralizedTime)**
 
   **What to do**:
   - RED: Test time type generation with value formats
@@ -1893,7 +1893,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 5 group)
 
-- [ ] 27. **PER constraint metadata emitter**
+- [x] 27. **PER constraint metadata emitter**
 
   **What to do**:
   - RED: Test that PER metadata is emitted for constrained types — value ranges, size constraints, alphabet constraints

@@ -9,6 +9,9 @@ add_executable(asn1pp-gen
     gen/emitter_enumerated.cpp
     gen/emitter_sequence.cpp
     gen/emitter_string.cpp
+    gen/emitter_choice.cpp
+    gen/emitter_time.cpp
+    gen/emitter_per_meta.cpp
 )
 
 target_include_directories(asn1pp-gen

@@ -250,3 +250,12 @@
 - Build: zero warnings, zero LSP diagnostics
 - **Bug**: Local variable named `result` shadows `result<T>` template — renamed to `octets`/`oid_bytes`
 - **Bug**: `skip_tlv` returned `tag_res` (result<tag>) instead of converting to result<void> — fixed
+
+## Task 23: CHOICE Type Emitter (2026-05-10)
+- Generated pattern: `std::variant` + `which` enum + type-safe `is_`/`get_` accessors
+- CHOICE tag: `make_universal(universal_tag::sequence, true)` — CHOICE is constructed
+- Extension marker: adds `_unknown_extension` enum value and `std::vector<uint8_t>` variant alt
+- Edge case: empty CHOICE with extension only — must guard against leading comma in `std::variant<, ...>`
+- `choice_alternative` is move-only (contains `unique_ptr<type_ref>`) — can't use `initializer_list`
+- Used same free-function pattern as `emit_sequence`/`emit_enumerated`, not the generator class like `emit_boolean`
+- 11 test cases: simple 2-alt, 3+ alt, extension marker, tag mapping, accessor methods, operator==, valid C++20 check, single alt, empty+ext

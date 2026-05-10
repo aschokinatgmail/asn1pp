@@ -86,3 +86,8 @@ asn1pp_add_test(emitter_integer_test gen/emitter_integer_test.cpp ${CMAKE_SOURCE
 asn1pp_add_test(emitter_enumerated_test gen/emitter_enumerated_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_enumerated.cpp)
 asn1pp_add_test(emitter_sequence_test gen/emitter_sequence_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_enumerated.cpp)
 asn1pp_add_test(emitter_string_test gen/emitter_string_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_string.cpp)
+asn1pp_add_test(emitter_choice_test gen/emitter_choice_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_choice.cpp)
+asn1pp_add_test(EmitterOid_test gen/emitter_oid_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_oid.cpp)
+asn1pp_add_test(emitter_sequence_of_test gen/emitter_sequence_of_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence_of.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
+asn1pp_add_test(per_meta_test gen/emitter_per_meta_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_per_meta.cpp)
+asn1pp_add_test(emitter_time_test gen/emitter_time_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_time.cpp)
