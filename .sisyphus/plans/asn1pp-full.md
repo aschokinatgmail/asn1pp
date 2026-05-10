@@ -1953,7 +1953,7 @@ Max Concurrent: 7 (Wave 1)
 
   **Commit**: YES (Wave 5 group)
 
-- [ ] 28. **DER integration tests with X.509 schema**
+- [x] 28. **DER integration tests with X.509 schema**
 
   **What to do**:
   - RED: Test that generated X.509 types DER-encode and match known test vectors

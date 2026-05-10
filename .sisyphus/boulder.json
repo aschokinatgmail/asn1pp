@@ -180,6 +180,15 @@
       "agent": "Sisyphus-Junior",
       "category": "quick",
       "updated_at": "2026-05-10T01:57:49.782Z"
+    },
+    "todo:28": {
+      "task_key": "todo:28",
+      "task_label": "28",
+      "task_title": "**DER integration tests with X.509 schema**",
+      "session_id": "ses_1f0600ba9ffexlAhjUxSdxgmO1",
+      "agent": "Sisyphus-Junior",
+      "category": "deep",
+      "updated_at": "2026-05-10T02:12:30.127Z"
     }
   }
 }
