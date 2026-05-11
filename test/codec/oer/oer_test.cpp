@@ -794,6 +794,7 @@ TEST_F(OerBooleanDecodeTest, DecodeFalse_UT_OER_DEC_BOOL_002) {
     EXPECT_FALSE(r.value());
 }
 
+#ifndef ASN1PP_EMBEDDED
 class OerOctetStringDecodeTest : public ::testing::Test {
 protected:
     oer_decoder decoder_;
@@ -839,6 +840,7 @@ TEST_F(OerBitStringDecodeTest, DecodeFixed_NoUnused_UT_OER_DEC_BS_001) {
     EXPECT_EQ(unused, 0);
     EXPECT_EQ(data[0], 0xAA);
 }
+#endif // ASN1PP_EMBEDDED
 
 class OerEnumeratedDecodeTest : public ::testing::Test {
 protected:
@@ -989,6 +991,7 @@ TEST_F(OerRoundTripTest, Boolean_False_UT_OER_RT_005) {
     EXPECT_FALSE(dec_r.value());
 }
 
+#ifndef ASN1PP_EMBEDDED
 TEST_F(OerRoundTripTest, OctetString_Fixed4_UT_OER_RT_006) {
     std::vector<uint8_t> buf(16);
     buffer_view enc_view(static_cast<std::span<uint8_t>>(buf));
@@ -1022,6 +1025,7 @@ TEST_F(OerRoundTripTest, OctetString_Unconstrained_UT_OER_RT_007) {
     EXPECT_EQ(result[0], 0xCA);
     EXPECT_EQ(result[1], 0xFE);
 }
+#endif // ASN1PP_EMBEDDED
 
 TEST_F(OerRoundTripTest, Enumerated_Small_UT_OER_RT_008) {
     std::vector<uint8_t> buf(8);

@@ -140,6 +140,7 @@ TEST(JerNullTest, DecodeBadNull_UT_JER_DEC_021) {
 // 4. OCTET STRING encoding / decoding (base64)
 // ============================================================================
 
+#ifndef ASN1PP_EMBEDDED
 TEST(JerOctetStringTest, EncodeAQID_UT_JER_ENC_030) {
     jer_encoder enc;
     std::string out;
@@ -174,6 +175,7 @@ TEST(JerOctetStringTest, DecodeEmpty_UT_JER_DEC_031) {
     ASSERT_TRUE(r.is_ok());
     EXPECT_TRUE(r.value().empty());
 }
+#endif // ASN1PP_EMBEDDED
 
 // ============================================================================
 // 5. ENUMERATED encoding / decoding
@@ -489,6 +491,7 @@ TEST(JerRoundTripTest, BooleanRoundTrip_UT_JER_RT_003) {
 }
 
 TEST(JerRoundTripTest, OctetStringRoundTrip_UT_JER_RT_004) {
+#ifndef ASN1PP_EMBEDDED
     jer_encoder enc;
     jer_decoder dec;
 
@@ -503,6 +506,7 @@ TEST(JerRoundTripTest, OctetStringRoundTrip_UT_JER_RT_004) {
     EXPECT_EQ(decoded[1], 0xAD);
     EXPECT_EQ(decoded[2], 0xBE);
     EXPECT_EQ(decoded[3], 0xEF);
+#endif // ASN1PP_EMBEDDED
 }
 
 TEST(JerRoundTripTest, OidRoundTrip_UT_JER_RT_005) {

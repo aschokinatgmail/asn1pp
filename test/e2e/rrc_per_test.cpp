@@ -42,6 +42,7 @@ using namespace asn1pp::per;
 
 namespace {
 
+#ifndef ASN1PP_EMBEDDED
 // INTEGER (0..3) — rrc-TransactionIdentifier, 2 bits
 struct rrc_tid_meta {
     static constexpr int64_t min_value = 0;
@@ -88,6 +89,7 @@ buffer_view make_view(std::vector<uint8_t>& vec) {
 buffer_view make_const_view(const std::vector<uint8_t>& vec) {
     return buffer_view(const_cast<std::vector<uint8_t>&>(vec));
 }
+#endif // ASN1PP_EMBEDDED
 
 } // namespace
 
@@ -95,6 +97,7 @@ buffer_view make_const_view(const std::vector<uint8_t>& vec) {
 // Fixture: RRC PER Round-Trip Test
 // ============================================================================
 
+#ifndef ASN1PP_EMBEDDED
 class RrcPerRoundTripTest : public ::testing::Test {
 protected:
     per_aligned_encoder encoder_;
@@ -372,3 +375,4 @@ TEST_F(RrcPerRoundTripTest, PayloadSizeVariants_ALIGNED_UT_E2E_RRC_PER_006) {
         ASSERT_TRUE(decoder_.decode_sequence_end(dec_view).is_ok());
     }
 }
+#endif // ASN1PP_EMBEDDED

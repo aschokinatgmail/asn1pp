@@ -197,6 +197,7 @@ TEST_F(NullDecodingTest, DecodeNull_UT_BER_DEC_018) {
 // 4. OCTET STRING decoding
 // ============================================================================
 
+#ifndef ASN1PP_EMBEDDED
 class OctetStringDecodingTest : public ::testing::Test {
 protected:
     ber_decoder decoder_;
@@ -236,10 +237,13 @@ TEST_F(OctetStringDecodingTest, DecodeLongFormLength_UT_BER_DEC_021) {
         EXPECT_EQ(r.value()[i], static_cast<uint8_t>(i & 0xFF));
 }
 
+#endif // ASN1PP_EMBEDDED
+
 // ============================================================================
 // 5. BIT STRING decoding
 // ============================================================================
 
+#ifndef ASN1PP_EMBEDDED
 class BitStringDecodingTest : public ::testing::Test {
 protected:
     ber_decoder decoder_;
@@ -284,6 +288,8 @@ TEST_F(BitStringDecodingTest, DecodeMultiByteWithUnused_UT_BER_DEC_025) {
     EXPECT_EQ(r.value().first[0], 0x0A);
     EXPECT_EQ(r.value().first[1], 0x3B);
 }
+
+#endif
 
 // ============================================================================
 // 6. ENUMERATED decoding
@@ -371,6 +377,7 @@ TEST_F(SequenceDecodingTest, DecodeSequenceWithBoolAndInt_UT_BER_DEC_031) {
     EXPECT_EQ(r_int.value(), 5);
 }
 
+#ifndef ASN1PP_EMBEDDED
 TEST_F(SequenceDecodingTest, DecodeSequenceWithOctetString_UT_BER_DEC_032) {
     std::vector<uint8_t> data = {
         0x30, 0x04,
@@ -386,6 +393,7 @@ TEST_F(SequenceDecodingTest, DecodeSequenceWithOctetString_UT_BER_DEC_032) {
     std::vector<uint8_t> expected = {'A', 'B'};
     EXPECT_EQ(r_oct.value(), expected);
 }
+#endif
 
 TEST_F(SequenceDecodingTest, DecodeNestedSequence_UT_BER_DEC_033) {
     std::vector<uint8_t> data = {
@@ -411,6 +419,7 @@ TEST_F(SequenceDecodingTest, DecodeNestedSequence_UT_BER_DEC_033) {
 // 8. OID decoding
 // ============================================================================
 
+#ifndef ASN1PP_EMBEDDED
 class OidDecodingTest : public ::testing::Test {
 protected:
     ber_decoder decoder_;
@@ -432,6 +441,7 @@ TEST_F(OidDecodingTest, DecodeEmptyOid_UT_BER_DEC_035) {
     ASSERT_TRUE(r.is_ok());
     EXPECT_TRUE(r.value().empty());
 }
+#endif
 
 // ============================================================================
 // 9. Error handling
@@ -482,6 +492,7 @@ TEST_F(DecoderErrorTest, WrongTagForNull_UT_BER_DEC_040) {
     EXPECT_EQ(r.error(), error_code::invalid_tag);
 }
 
+#ifndef ASN1PP_EMBEDDED
 TEST_F(DecoderErrorTest, WrongTagForOctetString_UT_BER_DEC_041) {
     std::vector<uint8_t> data = {0x02, 0x01, 0x00};  // integer tag instead of octet string
     buffer_view view = make_const_view(data);
@@ -489,6 +500,7 @@ TEST_F(DecoderErrorTest, WrongTagForOctetString_UT_BER_DEC_041) {
     ASSERT_TRUE(r.is_err());
     EXPECT_EQ(r.error(), error_code::invalid_tag);
 }
+#endif
 
 TEST_F(DecoderErrorTest, IntegerValueTooLarge_UT_BER_DEC_042) {
     std::vector<uint8_t> data = {0x02, 0x09, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08};
@@ -831,6 +843,7 @@ TEST_F(RoundTripTest, NullRoundTrip_UT_BER_DEC_068) {
     EXPECT_TRUE(r.is_ok());
 }
 
+#ifndef ASN1PP_EMBEDDED
 TEST_F(RoundTripTest, OctetStringRoundTrip_UT_BER_DEC_069) {
     const std::vector<uint8_t> original = {'h', 'e', 'l', 'l', 'o'};
     std::vector<uint8_t> buf(32);
@@ -843,7 +856,9 @@ TEST_F(RoundTripTest, OctetStringRoundTrip_UT_BER_DEC_069) {
     ASSERT_TRUE(r.is_ok());
     EXPECT_EQ(r.value(), original);
 }
+#endif
 
+#ifndef ASN1PP_EMBEDDED
 TEST_F(RoundTripTest, OidRoundTrip_UT_BER_DEC_070) {
     const std::vector<uint8_t> original = {0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D};
     std::vector<uint8_t> buf(32);
@@ -856,6 +871,7 @@ TEST_F(RoundTripTest, OidRoundTrip_UT_BER_DEC_070) {
     ASSERT_TRUE(r.is_ok());
     EXPECT_EQ(r.value(), original);
 }
+#endif
 
 TEST_F(RoundTripTest, EnumeratedRoundTrip_42_UT_BER_DEC_071) {
     std::vector<uint8_t> buf(16);

@@ -2,12 +2,15 @@
 
 #include <cstdint>
 #include <cstddef>
+#include <cstring>
 #include <span>
 #include <type_traits>
 #include <vector>
 #include <utility>
 
 #include "codec/result.hpp"
+#include "codec/arch_codec.hpp"
+#include "codec/batch_buffer.hpp"
 #include "buffer/buffer_view.hpp"
 #include "buffer/bit_ops.hpp"
 
@@ -74,6 +77,17 @@ public:
     /// Decode OBJECT IDENTIFIER (returns pre-encoded subidentifier form).
     result<std::vector<uint8_t>> decode_oid(const buffer_view& buf);
 
+    // ── Batch drain ────────────────────────────────────────────────────
+
+    /// Drain any pending batch decode operations via SIMD.
+    /// Idempotent — calling when no pending ops is a no-op.
+    /// Returns error_code::ok on success, or the first error encountered.
+    error_code flush_decode() noexcept;
+
+    /// Number of consecutive decode_integer() calls before flushing.
+    /// 4 for AVX2, 2 for SSE4.2/NEON, 1 for scalar (pass-through).
+    static size_t batch_size() noexcept;
+
     // ── Low-level helpers (public for testing) ─────────────────────────
 
     /// Decode constrained whole number per X.691 §12.2.
@@ -102,6 +116,17 @@ public:
 
 private:
     size_t bit_offset_ = 0;
+
+    // ── Batch buffer ───────────────────────────────────────────────────
+
+    static constexpr size_t kMaxBatchSize = 4;
+
+    struct pending_integer {
+        uint8_t value_buf[8];
+        size_t size;
+    };
+
+    batch_buffer<pending_integer, kMaxBatchSize> pending_;
 };
 
 // ── inline constexpr helpers ───────────────────────────────────────────────
@@ -242,22 +267,49 @@ inline result<int64_t> per_aligned_decoder::decode_integer(const buffer_view& bu
     size_t val_bytes = ld.value();
     if (val_bytes == 0) return result<int64_t>::ok(0);
     const uint8_t* data = buf.data();
-    if (bit_offset_ / 8 + val_bytes > buf.size()) {
+    const size_t byte_off = bit_offset_ / 8;
+    if (byte_off + val_bytes > buf.size()) {
         return result<int64_t>::err(error_code::buffer_underflow);
     }
-    // Read value bytes big-endian, sign-extend
-    int64_t result_val = 0;
-    bool negative = false;
-    size_t byte_off = bit_offset_ / 8;
-    if (val_bytes > 0 && (data[byte_off] & 0x80)) {
-        negative = true;
-        result_val = -1;  // sign extension fill
+    if (val_bytes > 8) {
+        return result<int64_t>::err(error_code::value_out_of_range);
     }
-    for (size_t i = 0; i < val_bytes; ++i) {
-        result_val = (result_val << 8) | data[byte_off + i];
-    }
+
+    const size_t bs = batch_size();
+
+    pending_integer slot = {};
+    std::memcpy(slot.value_buf, data + byte_off, val_bytes);
+    slot.size = val_bytes;
+    pending_.push(slot);
+
     bit_offset_ += val_bytes * 8;
-    (void)negative;
+
+    if (pending_.size() == bs) {
+        auto drained = pending_.drain();
+        const uint8_t* ptrs[kMaxBatchSize];
+        size_t sizes[kMaxBatchSize];
+        int64_t results[kMaxBatchSize];
+        error_code errors[kMaxBatchSize];
+
+        for (size_t i = 0; i < bs; ++i) {
+            ptrs[i] = drained[i].value_buf;
+            sizes[i] = drained[i].size;
+        }
+
+        arch_codec::batch_decode_integers(ptrs, sizes, results, errors, bs);
+
+        if (errors[bs - 1] != error_code::ok)
+            return result<int64_t>::err(errors[bs - 1]);
+        return result<int64_t>::ok(results[bs - 1]);
+    }
+
+    // Not full yet: scalar decode for immediate return
+    int64_t result_val = 0;
+    const bool negative = (slot.value_buf[0] & 0x80) != 0;
+    if (negative) result_val = -1;
+    for (size_t i = 0; i < val_bytes; ++i) {
+        result_val = (result_val << 8) | static_cast<int64_t>(slot.value_buf[i]);
+    }
     return result<int64_t>::ok(result_val);
 }
 

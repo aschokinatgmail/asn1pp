@@ -11,6 +11,9 @@
 #include <utility>
 
 #include "codec/result.hpp"
+#include "arch/simd.hpp"
+
+#ifndef ASN1PP_NO_TEXT_CODECS
 
 namespace asn1pp::xer {
 
@@ -316,8 +319,14 @@ public:
         return result<std::string>::ok(std::string(parse_result.value().children[0].content));
     }
 
+    static error_code flush_decode() noexcept {
+        return error_code::ok;
+    }
+
 private:
     static inline std::vector<xml_element>* current_sequence_ = nullptr;
 };
 
 } // namespace asn1pp::xer
+
+#endif  // ASN1PP_NO_TEXT_CODECS

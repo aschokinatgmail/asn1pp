@@ -11,6 +11,9 @@
 #include <charconv>
 
 #include "codec/result.hpp"
+#include "arch/simd.hpp"
+
+#ifndef ASN1PP_NO_TEXT_CODECS
 
 namespace asn1pp::jer {
 
@@ -314,6 +317,10 @@ public:
         return result<json_value>::ok(it->second);
     }
 
+    error_code flush_decode() noexcept {
+        return error_code::ok;
+    }
+
 private:
     static constexpr char base64_decode_chars[256] = {
         -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1, -1,-1,-1,-1,
@@ -368,3 +375,5 @@ private:
 };
 
 } // namespace asn1pp::jer
+
+#endif  // ASN1PP_NO_TEXT_CODECS

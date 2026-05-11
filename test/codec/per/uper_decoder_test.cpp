@@ -673,6 +673,7 @@ TEST(UperDecoderRoundTripTest, NullRoundTrip_UT_UPER_DEC_045) {
 // 7. Round-trip: OCTET STRING
 // ============================================================================
 
+#ifndef ASN1PP_EMBEDDED
 TEST(UperDecoderRoundTripTest, OctetString_Fixed4_UT_UPER_DEC_050) {
     auto enc_buf = make_mutable_buffer(16);
     auto enc_view = make_view(enc_buf);
@@ -719,7 +720,7 @@ TEST(UperDecoderRoundTripTest, OctetString_Unconstrained_UT_UPER_DEC_052) {
     uper_encoder enc;
     enc.set_bit_offset(0);
 
-    std::vector<uint8_t> data = {0xAB, 0xCD};
+    std::vector<uint8_t> data = {0xDE, 0xAD};
     auto enc_r = enc.encode_octet_string<unconstrained_octets_meta>(std::span<const uint8_t>(data), enc_view);
     ASSERT_TRUE(enc_r.is_ok());
     enc.flush(enc_view);
@@ -737,7 +738,7 @@ TEST(UperDecoderRoundTripTest, OctetString_Unconstrained_UT_UPER_DEC_052) {
 // 8. Round-trip: BIT STRING
 // ============================================================================
 
-// BIT STRING SIZE(8) — fixed size
+// BIT STRING SIZE(8) metadata
 struct bit_string_fixed8_meta {
     static constexpr size_t min_size = 8;
     static constexpr size_t max_size = 8;
@@ -805,6 +806,7 @@ TEST(UperDecoderRoundTripTest, BitString_Unconstrained_UT_UPER_DEC_061) {
     EXPECT_EQ(dec_r.value().first, data);
     EXPECT_EQ(dec_r.value().second, 6);
 }
+#endif // ASN1PP_EMBEDDED
 
 // ============================================================================
 // 9. Round-trip: ENUMERATED
@@ -1226,6 +1228,7 @@ TEST(UperDecoderErrorTest, ValueOutOfRange_Enumerated_UT_UPER_DEC_131) {
 }
 
 TEST(UperDecoderErrorTest, BufferUnderflow_OctetString_UT_UPER_DEC_132) {
+#ifndef ASN1PP_EMBEDDED
     // Buffer too small for fixed-size octet string
     auto buf_vec = make_mutable_buffer(1);
     auto dec_view = make_view(buf_vec);
@@ -1234,6 +1237,7 @@ TEST(UperDecoderErrorTest, BufferUnderflow_OctetString_UT_UPER_DEC_132) {
 
     auto dec_r = dec.decode_octet_string<fixed_octets_meta>(dec_view);
     ASSERT_TRUE(dec_r.is_err());
+#endif // ASN1PP_EMBEDDED
 }
 
 // ============================================================================

@@ -109,3 +109,12 @@ asn1pp_add_test(x509_der_test e2e/x509_der_test.cpp)
 
 # End-to-end tests
 asn1pp_add_test(rrc_per_test e2e/rrc_per_test.cpp)
+
+# Arch / SIMD tests
+asn1pp_add_test(simd_test arch/simd_test.cpp)
+asn1pp_add_test(arch_codec_test arch/arch_codec_test.cpp)
+
+# Embedded profile tests (only when ASN1PP_EMBEDDED is enabled)
+if(ASN1PP_EMBEDDED)
+    asn1pp_add_test(embedded_test embedded/embedded_test.cpp)
+endif()

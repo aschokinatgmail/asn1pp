@@ -7,6 +7,8 @@
 
 #include "codec/result.hpp"
 #include "buffer/buffer_view.hpp"
+#include "codec/arch_codec.hpp"
+#include "arch/simd.hpp"
 
 namespace asn1pp::oer {
 
@@ -99,6 +101,12 @@ public:
     /// 16384+:        `11000000 nnnnnnnn nnnnnnnn` (16-bit count)
     result<void> encode_length_determinant(size_t length, buffer_view& buf);
 
+    // ── Batch drain ────────────────────────────────────────────────────
+
+    /// Drain any pending batch encode operations via SIMD.
+    /// Idempotent — calling when no pending ops is a no-op.
+    error_code flush_encode() noexcept;
+
 private:
     /// Determine byte width for a constrained integer range at compile time.
     template<typename OerMeta>
@@ -113,6 +121,16 @@ private:
     /// Compute minimal two's complement big-endian encoding of an integer.
     /// Returns number of bytes written. out must have room for 9 bytes.
     static size_t encode_integer_bytes(int64_t value, uint8_t* out);
+
+    // ── Batch buffer ───────────────────────────────────────────────────
+    static constexpr size_t kMaxBatchSize = 4;
+    struct pending_integer {
+        uint8_t value_buf[8];
+        size_t size;
+        int64_t value;
+    };
+    batch_buffer<pending_integer, kMaxBatchSize> pending_;
+    static size_t batch_size() noexcept;
 };
 
 // ============================================================================
@@ -157,7 +175,11 @@ namespace {
 inline void write_octets_to_buf(buffer_view& buf, const uint8_t* src, size_t count) {
     if (buf.size() < count) return;
     uint8_t* out = const_cast<uint8_t*>(buf.data());
-    for (size_t i = 0; i < count; ++i) out[i] = src[i];
+    if (count > 32) {
+        arch::copy_bytes(out, src, count);
+    } else {
+        for (size_t i = 0; i < count; ++i) out[i] = src[i];
+    }
     buf = buf.subview(count, buf.size() - count);
 }
 
@@ -272,6 +294,38 @@ result<void> oer_encoder::encode_integer(int64_t value, buffer_view& buf) {
             return result<void>::err(error_code::value_out_of_range);
         if (buf.size() < byte_width)
             return result<void>::err(error_code::buffer_overflow);
+
+        pending_integer slot = {};
+        {
+            uint64_t uval = static_cast<uint64_t>(value);
+            for (size_t i = 0; i < byte_width; ++i) {
+                slot.value_buf[byte_width - 1 - i] = static_cast<uint8_t>(uval & 0xFF);
+                uval >>= 8;
+            }
+        }
+        slot.size  = byte_width;
+        slot.value = value;
+        pending_.push(slot);
+
+        const size_t bs = batch_size();
+        if (pending_.size() == bs) {
+            auto drained = pending_.flush();
+            uint8_t* ptrs[kMaxBatchSize];
+            size_t sizes[kMaxBatchSize];
+            int64_t values[kMaxBatchSize];
+            error_code errors[kMaxBatchSize];
+
+            for (size_t i = 0; i < bs; ++i) {
+                ptrs[i]   = drained[i].value_buf;
+                sizes[i]  = drained[i].size;
+                values[i] = drained[i].value;
+            }
+
+            arch_codec::batch_encode_integers(values, sizes, ptrs, errors, bs);
+
+            if (errors[bs - 1] != error_code::ok)
+                return result<void>::err(errors[bs - 1]);
+        }
 
         switch (byte_width) {
         case 1: write_be_8(buf, static_cast<uint8_t>(value)); break;
@@ -498,6 +552,47 @@ inline result<void> oer_encoder::encode_length_determinant(size_t length, buffer
         buf = buf.subview(3, buf.size() - 3);
     }
     return result<void>::ok();
+}
+
+// ── Batch helpers ──────────────────────────────────────────────────────
+
+inline size_t oer_encoder::batch_size() noexcept {
+    const auto level = arch::available_simd_level();
+    switch (level) {
+    case arch::simd_level::avx2:  return 4;
+    case arch::simd_level::sse42: return 2;
+    case arch::simd_level::neon:  return 2;
+    default:                      return 1;
+    }
+}
+
+inline error_code oer_encoder::flush_encode() noexcept {
+    if (pending_.empty())
+        return error_code::ok;
+
+    uint8_t* ptrs[kMaxBatchSize];
+    size_t sizes[kMaxBatchSize];
+    int64_t values[kMaxBatchSize];
+    error_code errors[kMaxBatchSize];
+
+    auto drained = pending_.flush();
+    const size_t count = drained.size();
+    for (size_t i = 0; i < count; ++i) {
+        ptrs[i]   = drained[i].value_buf;
+        sizes[i]  = drained[i].size;
+        values[i] = drained[i].value;
+    }
+
+    arch_codec::batch_encode_integers(values, sizes, ptrs, errors, count);
+
+    error_code first_err = error_code::ok;
+    for (size_t i = 0; i < count; ++i) {
+        if (errors[i] != error_code::ok) {
+            first_err = errors[i];
+            break;
+        }
+    }
+    return first_err;
 }
 
 } // namespace asn1pp::oer

@@ -322,6 +322,7 @@ TEST(XerDecoder, DecodeBooleanFalse) {
 }
 
 TEST(XerDecoder, DecodeOctetString) {
+#ifndef ASN1PP_EMBEDDED
     xer_decoder dec;
     auto result = dec.decode_octet_string("<data>AAEC/w==</data>");
     ASSERT_TRUE(result.is_ok());
@@ -331,13 +332,16 @@ TEST(XerDecoder, DecodeOctetString) {
     EXPECT_EQ(vec[1], 0x01);
     EXPECT_EQ(vec[2], 0x02);
     EXPECT_EQ(vec[3], 0xFF);
+#endif // ASN1PP_EMBEDDED
 }
 
 TEST(XerDecoder, DecodeOctetStringEmpty) {
+#ifndef ASN1PP_EMBEDDED
     xer_decoder dec;
     auto result = dec.decode_octet_string("<data></data>");
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(result.value().empty());
+#endif // ASN1PP_EMBEDDED
 }
 
 TEST(XerDecoder, DecodeEnumerated) {
@@ -403,6 +407,7 @@ TEST(XerDecoder, ChildContentForChoice) {
 }
 
 TEST(XerDecoder, DecodeBitString) {
+#ifndef ASN1PP_EMBEDDED
     xer_decoder dec;
     auto result = dec.decode_bit_string("<bits>qrs=</bits>");
     ASSERT_TRUE(result.is_ok());
@@ -410,6 +415,7 @@ TEST(XerDecoder, DecodeBitString) {
     ASSERT_EQ(vec.size(), 2u);
     EXPECT_EQ(vec[0], 0xAA);
     EXPECT_EQ(vec[1], 0xBB);
+#endif // ASN1PP_EMBEDDED
 }
 
 // ============================================================================
@@ -457,6 +463,7 @@ TEST(XerRoundTrip, BooleanFalse) {
 }
 
 TEST(XerRoundTrip, OctetString) {
+#ifndef ASN1PP_EMBEDDED
     xer_encoder enc;
     xer_decoder dec;
     std::string xml;
@@ -470,9 +477,11 @@ TEST(XerRoundTrip, OctetString) {
     EXPECT_EQ(vec[1], 0xAD);
     EXPECT_EQ(vec[2], 0xBE);
     EXPECT_EQ(vec[3], 0xEF);
+#endif // ASN1PP_EMBEDDED
 }
 
 TEST(XerRoundTrip, OctetStringEmpty) {
+#ifndef ASN1PP_EMBEDDED
     xer_encoder enc;
     xer_decoder dec;
     std::string xml;
@@ -480,9 +489,11 @@ TEST(XerRoundTrip, OctetStringEmpty) {
     auto result = dec.decode_octet_string(xml);
     ASSERT_TRUE(result.is_ok());
     EXPECT_TRUE(result.value().empty());
+#endif // ASN1PP_EMBEDDED
 }
 
 TEST(XerRoundTrip, BitString) {
+#ifndef ASN1PP_EMBEDDED
     xer_encoder enc;
     xer_decoder dec;
     std::string xml;
@@ -495,6 +506,7 @@ TEST(XerRoundTrip, BitString) {
     EXPECT_EQ(vec[0], 0x12);
     EXPECT_EQ(vec[1], 0x34);
     EXPECT_EQ(vec[2], 0x56);
+#endif // ASN1PP_EMBEDDED
 }
 
 TEST(XerRoundTrip, Enumerated) {

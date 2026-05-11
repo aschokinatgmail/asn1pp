@@ -7,6 +7,9 @@
 #include <cassert>
 
 #include "codec/result.hpp"
+#include "arch/simd.hpp"
+
+#ifndef ASN1PP_NO_TEXT_CODECS
 
 namespace asn1pp::jer {
 
@@ -103,6 +106,8 @@ public:
         }
     }
 
+    error_code flush_encode() noexcept { return error_code::ok; }
+
     void add_key(const char* key, std::string& out) {
         pre_value(out);
         out += '"';
@@ -155,4 +160,6 @@ private:
     }
 };
 
-}
+} // namespace asn1pp::jer
+
+#endif  // ASN1PP_NO_TEXT_CODECS

@@ -7,6 +7,8 @@
 #include <utility>
 
 #include "codec/result.hpp"
+#include "codec/arch_codec.hpp"
+#include "codec/batch_buffer.hpp"
 #include "buffer/buffer_view.hpp"
 #include "buffer/bit_ops.hpp"
 
@@ -75,6 +77,11 @@ public:
     /// Decode OBJECT IDENTIFIER (returns pre-encoded subidentifier form).
     result<std::vector<uint8_t>> decode_oid(const buffer_view& buf);
 
+    // ── Batch drain ────────────────────────────────────────────────────
+
+    error_code flush_decode() noexcept;
+    static size_t batch_size() noexcept;
+
     // ── Low-level helpers (public for testing) ─────────────────────────
 
     /// Decode constrained whole number per X.691 §12.2. NO alignment.
@@ -106,6 +113,15 @@ private:
                                       uint8_t* dst, size_t count);
 
     size_t bit_offset_ = 0;
+
+    static constexpr size_t kMaxBatchSize = 4;
+
+    struct pending_integer {
+        uint8_t value_buf[8];
+        size_t size;
+    };
+
+    batch_buffer<pending_integer, kMaxBatchSize> pending_;
 };
 
 // ── inline constexpr helpers ───────────────────────────────────────────────
@@ -269,20 +285,44 @@ inline result<int64_t> uper_decoder::decode_integer(const buffer_view& buf) {
     if (bit_offset_ + val_bytes * 8 > buf.size() * 8) {
         return result<int64_t>::err(error_code::buffer_underflow);
     }
-    // Read value bytes big-endian, sign-extend
+    if (val_bytes > 8) {
+        return result<int64_t>::err(error_code::value_out_of_range);
+    }
+
+    const size_t bs = batch_size();
+
+    pending_integer slot = {};
+    for (size_t i = 0; i < val_bytes; ++i) {
+        slot.value_buf[i] = static_cast<uint8_t>(read_bits(data, bit_offset_, 8));
+    }
+    slot.size = val_bytes;
+    pending_.push(slot);
+
+    if (pending_.size() == bs) {
+        auto drained = pending_.drain();
+        const uint8_t* ptrs[kMaxBatchSize];
+        size_t sizes[kMaxBatchSize];
+        int64_t results[kMaxBatchSize];
+        error_code errors[kMaxBatchSize];
+
+        for (size_t i = 0; i < bs; ++i) {
+            ptrs[i] = drained[i].value_buf;
+            sizes[i] = drained[i].size;
+        }
+
+        arch_codec::batch_decode_integers(ptrs, sizes, results, errors, bs);
+
+        if (errors[bs - 1] != error_code::ok)
+            return result<int64_t>::err(errors[bs - 1]);
+        return result<int64_t>::ok(results[bs - 1]);
+    }
+
     int64_t result_val = 0;
-    bool negative = false;
-    uint8_t first = static_cast<uint8_t>(read_bits(data, bit_offset_, 8));
-    if (first & 0x80) {
-        negative = true;
-        result_val = -1; // sign extension fill
+    const bool negative = (slot.value_buf[0] & 0x80) != 0;
+    if (negative) result_val = -1;
+    for (size_t i = 0; i < val_bytes; ++i) {
+        result_val = (result_val << 8) | static_cast<int64_t>(slot.value_buf[i]);
     }
-    result_val = (result_val << 8) | first;
-    for (size_t i = 1; i < val_bytes; ++i) {
-        uint8_t b = static_cast<uint8_t>(read_bits(data, bit_offset_, 8));
-        result_val = (result_val << 8) | b;
-    }
-    (void)negative;
     return result<int64_t>::ok(result_val);
 }
 

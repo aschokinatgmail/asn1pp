@@ -265,6 +265,7 @@ TEST_F(NullRoundtripTest, EncodeDecode_IT_DER_012) {
 // 4. OCTET STRING round-trip: short and long forms
 // ============================================================================
 
+#ifndef ASN1PP_EMBEDDED
 class OctetStringRoundtripTest : public ::testing::Test {
 protected:
     ber_encoder enc_;
@@ -406,6 +407,7 @@ TEST_F(BitStringRoundtripTest, Empty_IT_DER_019) {
     EXPECT_TRUE(data.empty());
     EXPECT_EQ(unused, 0);
 }
+#endif // ASN1PP_EMBEDDED
 
 // ============================================================================
 // 6. ENUMERATED round-trip

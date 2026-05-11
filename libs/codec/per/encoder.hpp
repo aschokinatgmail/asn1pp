@@ -8,6 +8,7 @@
 #include "codec/result.hpp"
 #include "buffer/buffer_view.hpp"
 #include "buffer/bit_ops.hpp"
+#include "arch/simd.hpp"
 
 namespace asn1pp::per {
 
@@ -19,6 +20,7 @@ namespace asn1pp::per {
 /// generator (Task 27).
 ///
 /// After each complete type encoding, output is aligned to an octet boundary.
+/// Uses SIMD-accelerated arch::copy_bytes() for large OCTET STRING payloads.
 class per_aligned_encoder {
 public:
     per_aligned_encoder() = default;
@@ -72,6 +74,12 @@ public:
     /// Encode OBJECT IDENTIFIER (pre-encoded subidentifier form).
     result<void> encode_oid(std::span<const uint8_t> encoded_oid, buffer_view& buf);
 
+    // ── Batch drain ────────────────────────────────────────────────────
+
+    /// Drain any pending batch encode operations.
+    /// No-op for PER — bit-level encoding doesn't use byte-level SIMD batching.
+    error_code flush_encode() noexcept { return error_code::ok; }
+
     // ── Low-level helpers (public for testing) ─────────────────────────
 
     /// Encode constrained whole number per X.691 §12.2.
@@ -98,6 +106,10 @@ public:
     /// Set bit offset (used after encoding into the buffer to track position).
     void set_bit_offset(size_t offset) noexcept { bit_offset_ = offset; }
 
+    /// SIMD-accelerated octet copy — uses arch::copy_bytes() for > 32 bytes.
+    static void write_octets_simd(uint8_t* dst, size_t& byte_offset,
+                                  const uint8_t* src, size_t count) noexcept;
+
 private:
     size_t bit_offset_ = 0;
 };
@@ -123,6 +135,18 @@ inline constexpr size_t per_aligned_encoder::bits_needed_for_range(
 
 inline void per_aligned_encoder::align(size_t& bit_offset) {
     align_to_octet(bit_offset);
+}
+
+inline void per_aligned_encoder::write_octets_simd(uint8_t* dst, size_t& byte_offset,
+                                                    const uint8_t* src, size_t count) noexcept {
+    if (count > 32) {
+        arch::copy_bytes(dst + byte_offset, src, count);
+    } else {
+        for (size_t i = 0; i < count; ++i) {
+            dst[byte_offset + i] = src[i];
+        }
+    }
+    byte_offset += count;
 }
 
 // ── Constrained whole number (X.691 §12.2) ─────────────────────────────────
@@ -298,7 +322,7 @@ inline result<void> per_aligned_encoder::encode_octet_string(
             }
             align(bit_offset_);
             size_t byte_off = bit_offset_ / 8;
-            write_octets(const_cast<uint8_t*>(buf.data()), byte_off, data.data(), data.size());
+            write_octets_simd(const_cast<uint8_t*>(buf.data()), byte_off, data.data(), data.size());
             bit_offset_ = byte_off * 8;
             return result<void>::ok();
         }
@@ -313,7 +337,7 @@ inline result<void> per_aligned_encoder::encode_octet_string(
             bit_offset_ = tmp_bit;
             align(bit_offset_);
             size_t byte_off = bit_offset_ / 8;
-            write_octets(out, byte_off, data.data(), data.size());
+            write_octets_simd(out, byte_off, data.data(), data.size());
             bit_offset_ = byte_off * 8;
             return result<void>::ok();
         }
@@ -323,7 +347,7 @@ inline result<void> per_aligned_encoder::encode_octet_string(
     auto ld = encode_length_determinant(data.size(), buf, bit_offset_);
     if (ld.is_err()) return ld;
     size_t byte_off = bit_offset_ / 8;
-    write_octets(const_cast<uint8_t*>(buf.data()), byte_off, data.data(), data.size());
+    write_octets_simd(const_cast<uint8_t*>(buf.data()), byte_off, data.data(), data.size());
     bit_offset_ = byte_off * 8;
     return result<void>::ok();
 }
@@ -340,7 +364,7 @@ inline result<void> per_aligned_encoder::encode_bit_string(
             }
             align(bit_offset_);
             size_t byte_off = bit_offset_ / 8;
-            write_octets(const_cast<uint8_t*>(buf.data()), byte_off, data.data(), data.size());
+            write_octets_simd(const_cast<uint8_t*>(buf.data()), byte_off, data.data(), data.size());
             bit_offset_ = byte_off * 8;
             return result<void>::ok();
         }
@@ -354,7 +378,7 @@ inline result<void> per_aligned_encoder::encode_bit_string(
             bit_offset_ = tmp_bit;
             align(bit_offset_);
             size_t byte_off = bit_offset_ / 8;
-            write_octets(out, byte_off, data.data(), data.size());
+            write_octets_simd(out, byte_off, data.data(), data.size());
             bit_offset_ = byte_off * 8;
             return result<void>::ok();
         }
@@ -367,7 +391,7 @@ inline result<void> per_aligned_encoder::encode_bit_string(
     out[byte_off] = unused_bits;
     bit_offset_ += 8;
     byte_off = bit_offset_ / 8;
-    write_octets(out, byte_off, data.data(), data.size());
+    write_octets_simd(out, byte_off, data.data(), data.size());
     bit_offset_ = byte_off * 8;
     return result<void>::ok();
 }

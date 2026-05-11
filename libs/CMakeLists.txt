@@ -1,3 +1,5 @@
+add_subdirectory(arch)
+
 add_library(asn1pp-codec STATIC
     # Buffer module
     buffer/buffer.cpp
@@ -31,6 +33,8 @@ target_include_directories(asn1pp-codec
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+target_link_libraries(asn1pp-codec PRIVATE asn1pp-arch)
 
 target_compile_features(asn1pp-codec PUBLIC
     cxx_std_20

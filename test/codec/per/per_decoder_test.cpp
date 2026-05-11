@@ -630,6 +630,7 @@ TEST_F(NullDecoderRoundTripTest, Null_UT_PER_DEC_060) {
 // 8. OCTET STRING round-trip
 // ============================================================================
 
+#ifndef ASN1PP_EMBEDDED
 class OctetStringDecoderRoundTripTest : public ::testing::Test {
 protected:
     per_aligned_encoder encoder_;
@@ -734,6 +735,7 @@ TEST_F(BitStringDecoderRoundTripTest, Constrained_UT_PER_DEC_082) {
     ASSERT_TRUE(r.is_ok());
     EXPECT_EQ(r.value().first, std::vector<uint8_t>({0xFF}));
 }
+#endif // ASN1PP_EMBEDDED
 
 // ============================================================================
 // 10. ENUMERATED round-trip
@@ -1047,10 +1049,12 @@ TEST(CompoundDecoderRoundTripTest, AllNullEncoding_UT_PER_DEC_141) {
     auto r_null = dec.decode_null(dec_view);
     ASSERT_TRUE(r_null.is_ok());
 
+#ifndef ASN1PP_EMBEDDED
     auto r_oct = dec.decode_octet_string<fixed_octets_meta>(dec_view);
     ASSERT_TRUE(r_oct.is_ok());
     std::vector<uint8_t> expected_oct = {0x00, 0x00, 0x00, 0x00};
     EXPECT_EQ(r_oct.value(), expected_oct);
+#endif // ASN1PP_EMBEDDED
 }
 
 TEST(CompoundDecoderRoundTripTest, MultiFieldSequenceBitmap_UT_PER_DEC_142) {
@@ -1148,11 +1152,13 @@ TEST(EdgeCaseDecoderTest, ConstrainedOctetStringMax_UT_PER_DEC_152) {
 
     per_aligned_decoder dec;
     auto dec_view = make_const_view(buf_vec);
+#ifndef ASN1PP_EMBEDDED
     auto r = dec.decode_octet_string<constrained_octets_meta>(dec_view);
     ASSERT_TRUE(r.is_ok());
     EXPECT_EQ(r.value().size(), 255u);
     EXPECT_EQ(r.value()[0], 0xAB);
     EXPECT_EQ(r.value()[254], 0xAB);
+#endif // ASN1PP_EMBEDDED
 }
 
 TEST(EdgeCaseDecoderTest, LargeConstrainedInteger_UT_PER_DEC_153) {

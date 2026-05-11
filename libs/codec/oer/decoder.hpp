@@ -5,8 +5,11 @@
 #include <span>
 #include <vector>
 #include <utility>
+#include <cstring>
 
 #include "codec/result.hpp"
+#include "codec/arch_codec.hpp"
+#include "codec/batch_buffer.hpp"
 #include "buffer/buffer_view.hpp"
 
 namespace asn1pp::oer {
@@ -59,6 +62,17 @@ public:
     /// Decode length determinant per X.696 §4.
     result<size_t> decode_length_determinant(buffer_view& buf);
 
+    // ── Batch drain ────────────────────────────────────────────────────
+
+    /// Drain any pending batch decode operations via SIMD.
+    /// Idempotent — calling when no pending ops is a no-op.
+    /// Returns error_code::ok on success, or the first error encountered.
+    error_code flush_decode() noexcept;
+
+    /// Number of consecutive decode_integer() calls before flushing.
+    /// 4 for AVX2, 2 for SSE4.2/NEON, 1 for scalar (pass-through).
+    static size_t batch_size() noexcept;
+
 private:
     /// Determine byte width for integer per constraint at compile time.
     template<typename OerMeta>
@@ -75,6 +89,17 @@ private:
 
     /// Decode two's complement big-endian integer from bytes.
     static int64_t decode_integer_value(std::span<const uint8_t> bytes);
+
+    // ── Batch buffer ───────────────────────────────────────────────────
+
+    static constexpr size_t kMaxBatchSize = 4;
+
+    struct pending_integer {
+        uint8_t value_buf[8];
+        size_t size;
+    };
+
+    batch_buffer<pending_integer, kMaxBatchSize> pending_;
 };
 
 // ============================================================================

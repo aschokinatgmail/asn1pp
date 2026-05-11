@@ -35,6 +35,13 @@ public:
     static size_t count_sign_leading_octets(std::span<const uint8_t> content,
                                             uint8_t sign_byte);
 
+    // ── Batch drain ────────────────────────────────────────────────────
+
+    /// Drain any pending batch encode operations via SIMD.
+    /// Delegates to the internal ber_encoder's flush_encode().
+    /// Idempotent — calling when no pending ops is a no-op.
+    error_code flush_encode() noexcept { return ber_enc_.flush_encode(); }
+
 private:
     ber_encoder ber_enc_;
     ber_decoder ber_dec_;

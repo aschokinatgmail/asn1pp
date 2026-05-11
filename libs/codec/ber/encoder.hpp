@@ -6,6 +6,7 @@
 
 #include "codec/result.hpp"
 #include "codec/traits.hpp"
+#include "codec/batch_buffer.hpp"
 #include "buffer/buffer_view.hpp"
 
 namespace asn1pp::ber {
@@ -24,6 +25,7 @@ public:
     // ── Primitive type encoders ────────────────────────────────────────
 
     /// Encode INTEGER (universal tag 2) in two's complement, big-endian.
+    /// Uses SIMD-accelerated batch encoding transparently.
     result<void> encode_integer(int64_t value, buffer_view& buf);
 
     /// Encode BOOLEAN (universal tag 1). true = 0xFF, false = 0x00.
@@ -33,6 +35,7 @@ public:
     result<void> encode_null(buffer_view& buf);
 
     /// Encode OCTET STRING (universal tag 4). Raw bytes, no transformation.
+    /// Uses SIMD-accelerated copy for payloads > 32 bytes.
     result<void> encode_octet_string(std::span<const uint8_t> data, buffer_view& buf);
 
     /// Encode BIT STRING (universal tag 3).
@@ -62,11 +65,33 @@ public:
     /// Write a complete TLV (tag + length + value). Delegates to tlv.hpp.
     result<void> encode_tlv(const tag& t, std::span<const uint8_t> value, buffer_view& buf);
 
+    // ── Batch drain ────────────────────────────────────────────────────
+
+    /// Drain any pending batch encode operations via SIMD.
+    /// Idempotent — calling when no pending ops is a no-op.
+    /// Returns error_code::ok on success, or the first error encountered.
+    error_code flush_encode() noexcept;
+
 private:
     /// Compute the minimal two's complement big-endian encoding of an integer.
     /// Writes bytes to `out` and returns the number of bytes written.
     /// `out` must have room for at least 9 bytes.
     static size_t encode_integer_bytes(int64_t value, uint8_t* out);
+
+    // ── Batch buffer ───────────────────────────────────────────────────
+
+    static constexpr size_t kMaxBatchSize = 4;
+
+    struct pending_integer {
+        uint8_t value_buf[8];
+        size_t size;
+        int64_t value;
+    };
+
+    batch_buffer<pending_integer, kMaxBatchSize> pending_;
+
+    /// Number of consecutive encode_integer() calls before flushing.
+    static size_t batch_size() noexcept;
 };
 
 } // namespace asn1pp::ber

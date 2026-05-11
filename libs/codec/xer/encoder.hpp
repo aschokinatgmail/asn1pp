@@ -6,6 +6,9 @@
 #include <vector>
 
 #include "codec/result.hpp"
+#include "arch/simd.hpp"
+
+#ifndef ASN1PP_NO_TEXT_CODECS
 
 namespace asn1pp::xer {
 
@@ -106,6 +109,8 @@ public:
         out += '>';
     }
 
+    static error_code flush_encode() noexcept { return error_code::ok; }
+
     static void open_sequence(const char* name, std::string& out) {
         open_element(name, out);
     }
@@ -132,3 +137,5 @@ public:
 };
 
 } // namespace asn1pp::xer
+
+#endif  // ASN1PP_NO_TEXT_CODECS

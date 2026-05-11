@@ -16,6 +16,10 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic -Werror)
 endif()
 
+# Embedded profile options
+option(ASN1PP_EMBEDDED "Embedded profile (zero heap, fixed buffers)" OFF)
+option(ASN1PP_NO_TEXT_CODECS "Strip text codecs (XER/JER)" OFF)
+
 # Enable testing
 enable_testing()
 
@@ -26,3 +30,14 @@ add_subdirectory(test)
 
 # CMake module path for asn1pp-cmake
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+
+# Apply embedded profile compile definitions (targets created in libs subdirectory)
+if(ASN1PP_EMBEDDED)
+    target_compile_definitions(asn1pp-codec PUBLIC ASN1PP_EMBEDDED ASN1PP_MAX_PDU=2048)
+    target_compile_definitions(asn1pp-arch PUBLIC ASN1PP_EMBEDDED ASN1PP_MAX_PDU=2048)
+endif()
+
+if(ASN1PP_NO_TEXT_CODECS)
+    target_compile_definitions(asn1pp-codec PUBLIC ASN1PP_NO_TEXT_CODECS)
+    target_compile_definitions(asn1pp-arch PUBLIC ASN1PP_NO_TEXT_CODECS)
+endif()
