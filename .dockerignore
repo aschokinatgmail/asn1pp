@@ -1,0 +1,10 @@
+build/
+build_emb/
+build_rel/
+_deps/
+.sisyphus/
+.git/
+*.o
+*.a
+*.elf
+*.bin

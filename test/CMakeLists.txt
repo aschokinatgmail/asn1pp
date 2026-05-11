@@ -69,6 +69,7 @@ asn1pp_add_test(traits_test codec/traits_test.cpp)
 asn1pp_add_test(tag_mapping_test codec/tag_mapping_test.cpp)
 asn1pp_add_test(result_test codec/result_test.cpp)
 asn1pp_add_test(codec_interface_test codec/codec_interface_test.cpp)
+asn1pp_add_test(version_test codec/version_test.cpp)
 
 # BER module tests
 asn1pp_add_test(tlv_test codec/ber/tlv_test.cpp)

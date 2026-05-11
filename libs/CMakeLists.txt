@@ -1,6 +1,7 @@
 add_subdirectory(arch)
 
-add_library(asn1pp-codec STATIC
+# Collect codec sources — conditionally exclude text codecs when stripped
+set(_codec_sources
     # Buffer module
     buffer/buffer.cpp
 
@@ -19,15 +20,22 @@ add_library(asn1pp-codec STATIC
     # OER encoder/decoder
     codec/oer/oer_encoder.cpp
     codec/oer/oer_decoder.cpp
-
-    # XER encoder/decoder
-    codec/xer/xer_encoder.cpp
-    codec/xer/xer_decoder.cpp
-
-    # JER encoder/decoder
-    codec/jer/jer_encoder.cpp
-    codec/jer/jer_decoder.cpp
 )
+
+# Text codecs (XER/JER) — excluded in embedded profile or when NO_TEXT_CODECS
+if(NOT NO_TEXT_CODECS AND NOT EMBEDDED)
+    list(APPEND _codec_sources
+        # XER encoder/decoder
+        codec/xer/xer_encoder.cpp
+        codec/xer/xer_decoder.cpp
+
+        # JER encoder/decoder
+        codec/jer/jer_encoder.cpp
+        codec/jer/jer_decoder.cpp
+    )
+endif()
+
+add_library(asn1pp-codec STATIC ${_codec_sources})
 
 target_include_directories(asn1pp-codec
     PUBLIC

@@ -1,0 +1,200 @@
+# Kconfig — asn1pp build-time configuration
+#
+# This file defines all configurable options for the asn1pp library using
+# a KConfig-inspired hierarchical format. Each entry specifies type, default,
+# dependencies, help text, and generated macro name.
+#
+# The cmake/kconfig.cmake module parses this file and creates corresponding
+# CMake cache variables + a generated config.hpp header.
+#
+# Syntax:
+#   menu "<label>"           — Group options into a named section
+#   endmenu                  — Close menu group
+#
+#   config <NAME>
+#       type <bool|int|string>       — Option type
+#       prompt "<description>"       — Human-readable description
+#       default <value>             — Default value
+#       depends on <condition>       — CMake boolean expression
+#       select <OTHER_CONFIG>        — Auto-enable when this is enabled
+#       range <min> <max>            — Integer range constraint
+#       help
+#         <multi-line help text>
+#
+# Conditions: use CMake variable names (EMBEDDED, CODEC_BER, etc.)
+# Boolean negation: !VAR_NAME
+
+# =============================================================================
+menu "Build Profile"
+
+config EMBEDDED
+    type bool
+    prompt "Embedded profile (zero heap, fixed buffers)"
+    default OFF
+    select NO_TEXT_CODECS
+    help
+      When enabled, the library targets embedded/bare-metal environments
+      with no heap allocations, fixed PDU buffers, and no exceptions.
+      Automatically implies NO_HEAP macro and enables MAX_PDU.
+      Implicitly strips text codecs (XER/JER).
+
+config NO_TEXT_CODECS
+    type bool
+    prompt "Strip text codecs (XER/JER)"
+    default OFF
+    help
+      When enabled, XER and JER encoding rules are excluded from the build.
+      Automatically selected by EMBEDDED mode.
+
+endmenu
+
+# =============================================================================
+menu "Buffer Sizing"
+
+config MAX_PDU
+    type int
+    prompt "Maximum PDU size in bytes (embedded mode)"
+    default 2048
+    range 64 65536
+    help
+      Maximum PDU buffer size used in embedded mode (ASN1PP_EMBEDDED).
+      All fixed-size decode buffers are sized to this value. Must be at
+      least 64 bytes and no more than 65536.
+
+endmenu
+
+# =============================================================================
+menu "SIMD Acceleration"
+
+config SIMD_SSE42
+    type bool
+    prompt "SSE4.2 SIMD backend"
+    default ON
+    help
+      Enable SSE4.2 SIMD acceleration for x86_64 targets. Requires
+      __builtin_cpu_supports("sse4.2") or equivalent at runtime.
+      If disabled, SSE4.2 intrinsics are not compiled.
+
+config SIMD_AVX2
+    type bool
+    prompt "AVX2 SIMD backend"
+    default ON
+    depends on SIMD_SSE42
+    help
+      Enable AVX2 SIMD acceleration for x86_64 targets. Requires
+      __builtin_cpu_supports("avx2") or equivalent at runtime.
+      Depends on SSE4.2 being enabled (AVX2 implies SSE4.2 at the ISA level).
+
+config SIMD_NEON
+    type bool
+    prompt "ARM NEON SIMD backend"
+    default ON
+    help
+      Enable NEON SIMD acceleration for ARM targets. Requires
+      getauxval(AT_HWCAP) & HWCAP_NEON or equivalent at runtime.
+      No effect on x86_64 builds.
+
+endmenu
+
+# =============================================================================
+menu "Encoding Rules"
+
+config CODEC_BER
+    type bool
+    prompt "BER codec support"
+    default ON
+    help
+      Basic Encoding Rules (ITU-T X.690). Required by most other codecs.
+      BER is the foundational encoding and should almost always remain enabled.
+
+config CODEC_DER
+    type bool
+    prompt "DER codec support"
+    default ON
+    depends on CODEC_BER
+    help
+      Distinguished Encoding Rules (ITU-T X.690). A constrained subset of BER.
+      Required for X.509 certificates and cryptographic signatures.
+
+config CODEC_PER
+    type bool
+    prompt "PER codec support"
+    default ON
+    help
+      Packed Encoding Rules (ITU-T X.691). Compact binary encoding used in
+      3GPP RRC and other bandwidth-constrained protocols.
+
+config CODEC_UPER
+    type bool
+    prompt "UPER codec support"
+    default ON
+    depends on CODEC_PER
+    help
+      Unaligned Packed Encoding Rules (ITU-T X.691). Variant of PER without
+      octet alignment. Used in 3GPP LTE/NR RRC.
+
+config CODEC_OER
+    type bool
+    prompt "OER codec support"
+    default ON
+    help
+      Octet Encoding Rules (ITU-T X.696). Canonical fixed-width binary encoding.
+      Ideal for SIMD acceleration due to predictable field widths.
+
+config CODEC_COER
+    type bool
+    prompt "COER codec support"
+    default ON
+    depends on CODEC_OER
+    help
+      Canonical Octet Encoding Rules (ITU-T X.696). Constrained subset of OER
+      for deterministic encoding.
+
+config CODEC_XER
+    type bool
+    prompt "XER codec support"
+    default ON
+    depends on NOT NO_TEXT_CODECS
+    help
+      XML Encoding Rules (ITU-T X.693). Human-readable XML format.
+      Automatically disabled when NO_TEXT_CODECS=ON or EMBEDDED=ON.
+
+config CODEC_CXER
+    type bool
+    prompt "CXER codec support"
+    default ON
+    depends on CODEC_XER
+    help
+      Canonical XML Encoding Rules (ITU-T X.693). Constrained subset of XER.
+
+config CODEC_JER
+    type bool
+    prompt "JER codec support"
+    default ON
+    depends on NOT NO_TEXT_CODECS
+    help
+      JSON Encoding Rules (ITU-T X.697). Human-readable JSON format.
+      Automatically disabled when NO_TEXT_CODECS=ON or EMBEDDED=ON.
+
+endmenu
+
+# =============================================================================
+menu "Build Options"
+
+config BUILD_TESTS
+    type bool
+    prompt "Build test suite"
+    default ON
+    help
+      Build all unit tests, integration tests, and smoke tests.
+      Requires Google Test (fetched via FetchContent).
+
+config BUILD_GEN
+    type bool
+    prompt "Build code generator (asn1pp-gen)"
+    default ON
+    help
+      Build the asn1pp-gen CLI tool for generating C++ code from .asn files.
+      This is a host tool and not needed on target.
+
+endmenu

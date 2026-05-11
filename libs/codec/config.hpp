@@ -2,6 +2,10 @@
 
 #include <cstddef>
 
+// Include generated Kconfig header (CONFIG_* macros)
+// Resolved from generated/ directory via target_include_directories
+#include "kconfig.hpp"
+
 namespace asn1pp {
 
 #ifdef ASN1PP_EMBEDDED

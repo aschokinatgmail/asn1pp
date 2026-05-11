@@ -6,6 +6,11 @@
 #include <concepts>
 #include "buffer/buffer_view.hpp"
 
+#ifndef ASN1PP_NO_TEXT_CODECS
+#include <string>
+#include <string_view>
+#endif
+
 namespace asn1pp {
 
 enum class universal_tag : uint32_t {
@@ -220,6 +225,7 @@ struct tag_for_type<bool> {
     static constexpr tag value = make_universal(universal_tag::boolean);
 };
 
+#ifndef ASN1PP_NO_TEXT_CODECS
 template<>
 struct tag_for_type<std::string> {
     static constexpr tag value = make_universal(universal_tag::octet_string);
@@ -229,6 +235,7 @@ template<>
 struct tag_for_type<std::string_view> {
     static constexpr tag value = make_universal(universal_tag::utf8_string);
 };
+#endif
 
 template<typename T>
 struct is_type_constructed : std::false_type {};
