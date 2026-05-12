@@ -89,3 +89,6 @@ vcpkg_installed/
 Testing/
 .cache/
 build5/
+
+# MKDocs site directory
+site/

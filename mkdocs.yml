@@ -1,0 +1,66 @@
+site_name: asn1pp
+site_url: https://aschokinatgmail.github.io/asn1pp/
+repo_url: https://github.com/aschokinatgmail/asn1pp
+edit_uri: edit/main/docs/
+
+exclude_docs: |
+  architecture.md
+  logo-concept.md
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.instant
+    - navigation.instant.preview
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+    - content.action.edit
+    - content.action.view
+    - Announce "Dark mode available" to screen readers
+
+plugins:
+  - search
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+nav:
+  - Home: index.md
+  - Getting Started:
+      - getting-started.md
+  - API Reference:
+      - api/ber.md
+      - api/per.md
+      - api/oer.md
+  - Guides:
+      - guides/embedded.md
+      - guides/simd.md
+      - guides/building.md
+  - Contributing:
+      - contributing.md
