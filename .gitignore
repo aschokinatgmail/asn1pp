@@ -43,6 +43,27 @@
 build/
 Build/
 build-*/
+build_cross/
+build_emb/
+build_rel/
+
+# CMake fetchcontent dependencies
+_deps/
+
+# Generated test data
+test/data/bad.asn
+test/data/simple.asn
+
+# Generated test sources
+test/gen/cli_test.cpp
+test/gen/emitter_ioc_test.cpp
+test/gen/emitter_parameterized_test.cpp
+test/gen/emitter_tagged_test.cpp
+test/gen/parser_parameterized_test.cpp
+
+# Leftover build artifacts
+libs/buffer/buffer
+Dockerfile.cross
 
 # CMake generated files
 CMakeFiles/
