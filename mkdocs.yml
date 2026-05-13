@@ -58,6 +58,8 @@ nav:
       - api/ber.md
       - api/per.md
       - api/oer.md
+  - Code Generator:
+      - code-generator.md
   - Guides:
       - guides/embedded.md
       - guides/simd.md

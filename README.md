@@ -406,7 +406,7 @@ Topics covered:
 - Building & KConfig reference
 - SIMD acceleration guide
 - Embedded / bare-metal guide
-- asn1pp-gen code generator documentation
+- [asn1pp-gen code generator documentation](https://aschokinatgmail.github.io/asn1pp/code-generator)
 
 ---
 

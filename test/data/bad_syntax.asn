@@ -1,0 +1,8 @@
+-- Schema with intentional syntax errors for negative testing
+-- Error 1: missing type after ::= (incomplete assignment)
+-- Error 2: missing closing brace in SEQUENCE
+BadSyntaxModule DEFINITIONS ::= BEGIN
+    BrokenType ::= SEQUENCE {
+        field1 INTEGER
+    MissingEnd ::= INTEGER
+END

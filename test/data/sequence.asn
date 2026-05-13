@@ -1,0 +1,10 @@
+-- Module with SEQUENCE containing multiple field types
+-- Expected C++: struct with named members: intField (INTEGER),
+-- strField (OCTET STRING), flag (BOOLEAN)
+SequenceModule DEFINITIONS ::= BEGIN
+    MySequence ::= SEQUENCE {
+        intField   INTEGER,
+        strField   OCTET STRING,
+        flag       BOOLEAN
+    }
+END

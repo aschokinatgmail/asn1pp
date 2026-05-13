@@ -1,0 +1,8 @@
+-- Module with CHOICE between INTEGER and BOOLEAN
+-- Expected C++: variant type with intVal (INTEGER) or flag (BOOLEAN)
+ChoiceModule DEFINITIONS ::= BEGIN
+    MyChoice ::= CHOICE {
+        intVal   INTEGER,
+        flag     BOOLEAN
+    }
+END

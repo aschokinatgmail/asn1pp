@@ -1,0 +1,11 @@
+-- Protocol message used by the ASN.1-to-C++ workflow example.
+-- Keep this within the generator's supported AST: SEQUENCE, INTEGER,
+-- BOOLEAN, and OCTET STRING.
+ExampleProtocol DEFINITIONS ::= BEGIN
+    ProtocolMessage ::= SEQUENCE {
+        version    INTEGER,
+        messageId  INTEGER,
+        urgent     BOOLEAN,
+        payload    OCTET STRING
+    }
+END

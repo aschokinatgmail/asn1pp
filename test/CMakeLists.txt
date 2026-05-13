@@ -82,6 +82,7 @@ asn1pp_add_test(ast_test gen/ast_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.
 asn1pp_add_test(diagnostics_test gen/diagnostics_test.cpp)
 asn1pp_add_test(lexer_test gen/lexer_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp)
 asn1pp_add_test(parser_test gen/parser_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
+asn1pp_add_test(schema_parser_test gen/schema_parser_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/schema_parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp)
 asn1pp_add_test(EmitterBoolean_test gen/emitter_boolean_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_boolean.cpp)
 asn1pp_add_test(emitter_integer_test gen/emitter_integer_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_integer.cpp ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp ${CMAKE_SOURCE_DIR}/src/gen/ast_print.cpp)
 asn1pp_add_test(emitter_enumerated_test gen/emitter_enumerated_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_enumerated.cpp)
@@ -93,6 +94,35 @@ asn1pp_add_test(emitter_sequence_of_test gen/emitter_sequence_of_test.cpp ${CMAK
 asn1pp_add_test(per_meta_test gen/emitter_per_meta_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_per_meta.cpp)
 asn1pp_add_test(emitter_time_test gen/emitter_time_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_time.cpp)
 asn1pp_add_test(emitter_ioc_test gen/emitter_ioc_test.cpp ${CMAKE_SOURCE_DIR}/src/gen/emitter_ioc.cpp)
+asn1pp_add_test(generator_test gen/generator_test.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/generator.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_integer.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_boolean.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_enumerated.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_oid.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_string.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence_of.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_choice.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_tagged.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_parameterized.cpp)
+asn1pp_add_test(gen_integration_test gen/integration_test.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/schema_parser.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/lexer.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/parser.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/generator.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_integer.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_boolean.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_enumerated.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_oid.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_string.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_sequence_of.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_choice.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_tagged.cpp
+    ${CMAKE_SOURCE_DIR}/src/gen/emitter_parameterized.cpp)
 
 # Tagged types tests
 asn1pp_add_test(tagged_codec_test codec/tagged_codec_test.cpp)

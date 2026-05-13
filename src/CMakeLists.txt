@@ -6,12 +6,19 @@ add_executable(asn1pp-gen
     gen/ast_print.cpp
     gen/lexer.cpp
     gen/parser.cpp
+    gen/emitter.cpp
+    gen/emitter_boolean.cpp
     gen/emitter_integer.cpp
     gen/emitter_enumerated.cpp
-    gen/emitter_sequence.cpp
+    gen/emitter_oid.cpp
     gen/emitter_string.cpp
-    gen/emitter_choice.cpp
     gen/emitter_time.cpp
+    gen/emitter_sequence.cpp
+    gen/emitter_sequence_of.cpp
+    gen/emitter_choice.cpp
+    gen/emitter_tagged.cpp
+    gen/emitter_ioc.cpp
+    gen/emitter_parameterized.cpp
     gen/emitter_per_meta.cpp
 )
 

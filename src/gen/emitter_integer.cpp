@@ -4,7 +4,7 @@
 
 namespace asn1pp::gen {
 
-std::string code_emitter::emit_header_guard(std::string_view name) {
+inline std::string code_emitter::emit_header_guard(std::string_view name) {
     std::ostringstream oss;
     for (char c : name) {
         if (c >= 'A' && c <= 'Z') oss << '_' << c;
@@ -18,7 +18,7 @@ std::string code_emitter::emit_header_guard(std::string_view name) {
     return "ASN1PP_" + result + "_HPP";
 }
 
-std::string code_emitter::emit_includes(const std::vector<std::string>& includes) {
+inline std::string code_emitter::emit_includes(const std::vector<std::string>& includes) {
     std::ostringstream oss;
     for (const auto& inc : includes) {
         if (inc.front() == '<') oss << "#include " << inc << "\n";
@@ -27,12 +27,12 @@ std::string code_emitter::emit_includes(const std::vector<std::string>& includes
     return oss.str();
 }
 
-std::string code_emitter::emit_namespace_open(const std::string& ns) {
+inline std::string code_emitter::emit_namespace_open(const std::string& ns) {
     if (ns.empty()) return {};
     return "namespace " + ns + " {\n";
 }
 
-std::string code_emitter::emit_namespace_close(const std::string& ns) {
+inline std::string code_emitter::emit_namespace_close(const std::string& ns) {
     if (ns.empty()) return {};
     return "}  // namespace " + ns + "\n";
 }

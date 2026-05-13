@@ -1,0 +1,11 @@
+-- Realistic protocol message with header and payload
+-- Models a typical PDU: header (version + msg_id + length) + payload (data)
+-- Expected C++: nested struct with header struct and data octet string
+RealisticModule DEFINITIONS ::= BEGIN
+    ProtocolMessage ::= SEQUENCE {
+        version     INTEGER,
+        messageId   INTEGER,
+        payloadLen  INTEGER,
+        payload     OCTET STRING
+    }
+END
